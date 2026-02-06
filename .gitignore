@@ -1,0 +1,7 @@
+node_modules/
+database/solar_system.db
+*.log
+.env
+.DS_Store
+Solar-Management-System/
+

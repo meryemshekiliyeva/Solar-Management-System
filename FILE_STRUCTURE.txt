@@ -1,0 +1,200 @@
+📁 UNIVERSITY SOLAR MANAGEMENT SYSTEM - FILE STRUCTURE
+═══════════════════════════════════════════════════════
+
+Yeni qovluq/
+│
+├── 📄 server.js                    ⭐ Main server file (Node.js + Express + WebSocket)
+│   ├── Express server setup
+│   ├── WebSocket server
+│   ├── IoT sensor simulation (every 5 seconds)
+│   ├── Real-time data broadcasting
+│   └── Alert generation logic
+│
+├── 📄 package.json                 📦 Dependencies and scripts
+│   ├── express
+│   ├── sqlite3
+│   ├── bcryptjs
+│   ├── jsonwebtoken
+│   ├── cors
+│   ├── ws (WebSocket)
+│   └── json2csv
+│
+├── 📁 database/
+│   ├── 📄 db.js                    💾 Database setup and initialization
+│   │   ├── SQLite connection
+│   │   ├── Table creation (users, devices, energy_logs, alerts)
+│   │   ├── Sample data insertion
+│   │   └── Default admin user creation
+│   │
+│   └── 📄 solar_system.db          🗄️ SQLite database (auto-created)
+│       ├── users table
+│       ├── devices table
+│       ├── energy_logs table
+│       └── alerts table
+│
+├── 📁 routes/
+│   ├── 📄 auth.js                  🔐 Authentication routes
+│   │   ├── POST /api/auth/login
+│   │   ├── GET /api/auth/me
+│   │   └── JWT token verification
+│   │
+│   ├── 📄 devices.js               ⚡ Device management routes
+│   │   ├── GET /api/devices
+│   │   ├── GET /api/devices/:id
+│   │   ├── PUT /api/devices/:id/status
+│   │   └── GET /api/devices/stats/summary
+│   │
+│   ├── 📄 energy.js                🔋 Energy data routes
+│   │   ├── GET /api/energy/summary/today
+│   │   ├── GET /api/energy/logs
+│   │   ├── GET /api/energy/hourly
+│   │   └── GET /api/energy/prediction
+│   │
+│   ├── 📄 alerts.js                🔔 Alert management routes
+│   │   ├── GET /api/alerts
+│   │   ├── GET /api/alerts/recent
+│   │   ├── PUT /api/alerts/:id/status
+│   │   └── POST /api/alerts
+│   │
+│   ├── 📄 users.js                 👥 User management routes (Admin only)
+│   │   ├── GET /api/users
+│   │   ├── POST /api/users
+│   │   ├── DELETE /api/users/:id
+│   │   └── PUT /api/users/:id/role
+│   │
+│   └── 📄 export.js                📥 CSV export routes
+│       ├── GET /api/export/energy-logs
+│       └── GET /api/export/devices
+│
+├── 📁 public/                      🌐 Frontend files
+│   │
+│   ├── 📄 index.html               📱 Main HTML (Single Page Application)
+│   │   ├── Login Page
+│   │   ├── Dashboard Page
+│   │   ├── Devices Page
+│   │   ├── Map Page
+│   │   ├── History Page
+│   │   ├── Alerts Page
+│   │   ├── Prediction Page
+│   │   ├── Export Page
+│   │   ├── Users Page
+│   │   └── Add User Modal
+│   │
+│   ├── 📁 css/
+│   │   └── 📄 style.css            🎨 Complete styling (562 lines)
+│   │       ├── Login page styles
+│   │       ├── Sidebar navigation
+│   │       ├── Header styles
+│   │       ├── Card layouts
+│   │       ├── Chart containers
+│   │       ├── Table styles
+│   │       ├── Alert styles
+│   │       ├── Modal styles
+│   │       ├── Form styles
+│   │       ├── Button styles
+│   │       └── Responsive design
+│   │
+│   └── 📁 js/
+│       └── 📄 app.js               ⚙️ Frontend JavaScript (759 lines)
+│           ├── Login functionality
+│           ├── Authentication
+│           ├── WebSocket connection
+│           ├── Real-time data updates
+│           ├── Dashboard loading
+│           ├── Chart.js integration
+│           ├── Leaflet.js map
+│           ├── Device management
+│           ├── History filtering
+│           ├── Alert display
+│           ├── Prediction chart
+│           ├── CSV export
+│           ├── User management
+│           └── Navigation system
+│
+├── 📁 node_modules/                📦 Installed dependencies (auto-generated)
+│
+├── 📄 .gitignore                   🚫 Git ignore file
+│
+├── 📄 README.md                    📖 Full documentation
+│   ├── Features overview
+│   ├── Technology stack
+│   ├── Installation guide
+│   ├── Usage instructions
+│   ├── API endpoints
+│   └── Configuration options
+│
+├── 📄 QUICK_START.md               🚀 Quick start guide
+│   ├── 3-step setup
+│   ├── Login credentials
+│   ├── Feature walkthrough
+│   ├── Troubleshooting
+│   └── Tips and tricks
+│
+├── 📄 PROJECT_SUMMARY.md           📋 Complete feature summary
+│   ├── All 12 features detailed
+│   ├── All 9 pages detailed
+│   ├── Technology stack
+│   ├── Files created
+│   └── Completion status
+│
+├── 📄 FEATURES_CHECKLIST.md        ✅ Features checklist
+│   ├── Main features (12/12)
+│   ├── Pages (9/9)
+│   ├── Technology requirements
+│   ├── UI design requirements
+│   └── Final status
+│
+├── 📄 FILE_STRUCTURE.txt           📁 This file
+│
+└── 📄 START_SERVER.bat             ▶️ Windows batch file to start server
+
+
+═══════════════════════════════════════════════════════
+📊 PROJECT STATISTICS
+═══════════════════════════════════════════════════════
+
+Total Files Created:        20 files
+Backend Files:              8 files (server.js + 7 routes + db.js)
+Frontend Files:             3 files (HTML + CSS + JS)
+Documentation Files:        5 files
+Configuration Files:        4 files
+
+Lines of Code:
+- server.js:                ~120 lines
+- routes/*.js:              ~400 lines total
+- database/db.js:           ~90 lines
+- public/index.html:        ~312 lines
+- public/css/style.css:     ~562 lines
+- public/js/app.js:         ~759 lines
+TOTAL:                      ~2,243 lines of code
+
+Features Implemented:       12/12 (100%)
+Pages Created:              9/9 (100%)
+API Endpoints:              20+ endpoints
+
+═══════════════════════════════════════════════════════
+🎯 KEY FILES TO UNDERSTAND
+═══════════════════════════════════════════════════════
+
+1. server.js                - Start here to understand backend
+2. database/db.js           - Database schema and sample data
+3. public/index.html        - All 9 pages structure
+4. public/css/style.css     - Complete UI styling
+5. public/js/app.js         - All frontend logic
+6. routes/auth.js           - Authentication system
+7. routes/energy.js         - Energy data and prediction
+
+═══════════════════════════════════════════════════════
+🚀 TO RUN THE PROJECT
+═══════════════════════════════════════════════════════
+
+1. Double-click: START_SERVER.bat
+   OR
+   Run in terminal: node server.js
+
+2. Open browser: http://localhost:3000
+
+3. Login: admin@university.edu / admin123
+
+═══════════════════════════════════════════════════════
+
