@@ -465,12 +465,24 @@ async function toggleDevice(deviceId, currentStatus) {
 
 // Load Map
 let map = null;
+let markers = {};
+let deviceData = [];
+
 async function loadMap() {
     try {
         const response = await fetch(`${API_URL}/devices`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const devices = await response.json();
+        
+        // Store device data with simulated sensor values
+        deviceData = devices.map(device => ({
+            ...device,
+            battery: Math.random() * 40 + 60,
+            voltage: Math.random() * 10 + 220,
+            temperature: Math.random() * 15 + 25,
+            lastUpdate: new Date()
+        }));
 
         // Initialize map if not already done
         if (!map) {
@@ -487,24 +499,184 @@ async function loadMap() {
                 map.removeLayer(layer);
             }
         });
+        markers = {};
 
-        // Add markers for each device
-        devices.forEach(device => {
-            const icon = device.type === 'solar_panel' ? '☀️' : '🔋';
-            const color = device.status === 'active' ? 'green' : 'red';
+        // Add markers for each device with status colors
+        deviceData.forEach(device => {
+            const statusColor = getDeviceStatus(device.battery);
+            const markerColor = getMarkerColor(statusColor);
+            
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    background: ${markerColor};
+                    border: 3px solid white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
 
-            const marker = L.marker([device.latitude, device.longitude]).addTo(map);
-            marker.bindPopup(`
-                <b>${icon} ${device.name}</b><br>
-                Type: ${device.type.replace('_', ' ')}<br>
-                Status: <span style="color: ${color}">${device.status}</span><br>
-                Location: ${device.location}
-            `);
+            const marker = L.marker([device.latitude, device.longitude], { icon: customIcon }).addTo(map);
+            
+            marker.bindPopup(createPopupContent(device));
+            markers[device.id] = marker;
         });
+
+        // Render device panel
+        renderDevicePanel();
+        
+        // Start real-time simulation
+        startRealtimeSimulation();
 
     } catch (error) {
         console.error('Error loading map:', error);
     }
+}
+
+function getDeviceStatus(battery) {
+    if (battery >= 70) return 'active';
+    if (battery >= 30) return 'warning';
+    return 'offline';
+}
+
+function getMarkerColor(status) {
+    const colors = {
+        active: '#2ecc71',
+        warning: '#f39c12',
+        offline: '#e74c3c'
+    };
+    return colors[status] || '#95a5a6';
+}
+
+function createPopupContent(device) {
+    const status = getDeviceStatus(device.battery);
+    return `
+        <div class="popup-header">${device.name}</div>
+        <div class="popup-detail">
+            <span class="popup-label">Status:</span>
+            <span class="popup-status ${status}">${status.toUpperCase()}</span>
+        </div>
+        <div class="popup-detail">
+            <span class="popup-label">Battery:</span>
+            <span class="popup-value">${device.battery.toFixed(1)}%</span>
+        </div>
+        <div class="popup-detail">
+            <span class="popup-label">Voltage:</span>
+            <span class="popup-value">${device.voltage.toFixed(2)} V</span>
+        </div>
+        <div class="popup-detail">
+            <span class="popup-label">Temperature:</span>
+            <span class="popup-value">${device.temperature.toFixed(1)} °C</span>
+        </div>
+        <div class="popup-detail">
+            <span class="popup-label">Last Update:</span>
+            <span class="popup-value">${device.lastUpdate.toLocaleTimeString()}</span>
+        </div>
+    `;
+}
+
+function renderDevicePanel() {
+    const panel = document.getElementById('device-list');
+    
+    panel.innerHTML = deviceData.map(device => {
+        const status = getDeviceStatus(device.battery);
+        const batteryClass = device.battery >= 70 ? '' : device.battery >= 30 ? 'medium' : 'low';
+        
+        return `
+            <div class="device-card ${status}" onclick="focusDevice(${device.id})">
+                <div class="device-card-header">
+                    <span class="device-card-name">${device.name}</span>
+                    <span class="device-card-status ${status}"></span>
+                </div>
+                <div class="device-card-details">
+                    <div class="device-detail-row">
+                        <span class="device-detail-label">Battery:</span>
+                        <span class="device-detail-value">${device.battery.toFixed(1)}%</span>
+                    </div>
+                    <div class="battery-bar">
+                        <div class="battery-fill ${batteryClass}" style="width: ${device.battery}%"></div>
+                    </div>
+                    <div class="device-detail-row">
+                        <span class="device-detail-label">Temp:</span>
+                        <span class="device-detail-value">${device.temperature.toFixed(1)} °C</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function focusDevice(deviceId) {
+    const device = deviceData.find(d => d.id === deviceId);
+    if (device && markers[deviceId]) {
+        map.flyTo([device.latitude, device.longitude], 15, {
+            duration: 1.5
+        });
+        setTimeout(() => {
+            markers[deviceId].openPopup();
+        }, 1500);
+    }
+}
+
+function startRealtimeSimulation() {
+    // Clear existing interval if any
+    if (window.mapUpdateInterval) {
+        clearInterval(window.mapUpdateInterval);
+    }
+    
+    window.mapUpdateInterval = setInterval(() => {
+        deviceData.forEach(device => {
+            // Simulate battery changes
+            device.battery += (Math.random() - 0.5) * 2;
+            device.battery = Math.max(10, Math.min(100, device.battery));
+            
+            // Simulate temperature changes
+            device.temperature += (Math.random() - 0.5) * 1.5;
+            device.temperature = Math.max(20, Math.min(45, device.temperature));
+            
+            // Simulate voltage fluctuations
+            device.voltage += (Math.random() - 0.5) * 2;
+            device.voltage = Math.max(200, Math.min(240, device.voltage));
+            
+            device.lastUpdate = new Date();
+            
+            // Update marker color based on new battery level
+            const status = getDeviceStatus(device.battery);
+            const markerColor = getMarkerColor(status);
+            
+            if (markers[device.id]) {
+                const newIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="
+                        width: 30px;
+                        height: 30px;
+                        border-radius: 50%;
+                        background: ${markerColor};
+                        border: 3px solid white;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    "></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                
+                markers[device.id].setIcon(newIcon);
+                
+                // Update popup if open
+                const popup = markers[device.id].getPopup();
+                if (popup && popup.isOpen()) {
+                    popup.setContent(createPopupContent(device));
+                }
+            }
+        });
+        
+        // Refresh device panel
+        renderDevicePanel();
+        
+    }, 5000);
 }
 
 // Load History
