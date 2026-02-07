@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Solar Management Platform</title>
+    <link rel="stylesheet" href="css/style_v2.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="login-page" class="page active">
+        <div class="login-container">
+            <div class="login-box">
+                <h1>🌞 Solar Management System</h1>
+                <h2>University Energy Monitoring</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="login-email" placeholder="admin@university.edu" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <div id="login-error" class="error-message"></div>
+                </form>
+                <p class="login-hint">Default: admin@university.edu / admin123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🌞 Solar System</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" data-page="dashboard" class="nav-item active">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="#" data-page="devices" class="nav-item">
+                    <span class="icon">⚡</span> Devices
+                </a>
+                <a href="#" data-page="map" class="nav-item">
+                    <span class="icon">🗺️</span> Map
+                </a>
+                <a href="#" data-page="history" class="nav-item">
+                    <span class="icon">📜</span> History
+                </a>
+                <a href="#" data-page="alerts" class="nav-item">
+                    <span class="icon">🔔</span> Alerts
+                </a>
+                <a href="#" data-page="prediction" class="nav-item">
+                    <span class="icon">🔮</span> Prediction
+                </a>
+                <a href="#" data-page="export" class="nav-item">
+                    <span class="icon">📥</span> Export
+                </a>
+                <a href="#" data-page="users" class="nav-item admin-only">
+                    <span class="icon">👥</span> Users
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="user-info">
+                    <span id="user-email"></span>
+                    <span id="user-role" class="badge"></span>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <div id="dashboard-content" class="content-page active">
+                <!-- Summary Cards -->
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-icon green">⚡</div>
+                        <div class="card-content">
+                            <h3>Energy Generated Today</h3>
+                            <p class="card-value" id="total-generated">0 kWh</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon blue">🔋</div>
+                        <div class="card-content">
+                            <h3>Current Battery Level</h3>
+                            <p class="card-value" id="battery-level">0%</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon orange">💡</div>
+                        <div class="card-content">
+                            <h3>Energy Consumption Today</h3>
+                            <p class="card-value" id="total-consumed">0 kWh</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon purple">📱</div>
+                        <div class="card-content">
+                            <h3>Active Devices</h3>
+                            <p class="card-value" id="active-devices">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Energy Generated Over Time</h3>
+                        <canvas id="energy-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Battery Level</h3>
+                        <canvas id="battery-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Live Monitoring & Alerts -->
+                <div class="monitoring-grid">
+                    <div class="monitoring-panel">
+                        <h3>Live Solar Panel Data</h3>
+                        <div class="monitoring-data">
+                            <div class="data-item">
+                                <span class="label">Voltage:</span>
+                                <span class="value" id="live-voltage">0 V</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Current:</span>
+                                <span class="value" id="live-current">0 A</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Temperature:</span>
+                                <span class="value" id="live-temperature">0 °C</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Power:</span>
+                                <span class="value" id="live-power">0 W</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alerts-panel">
+                        <h3>Recent Alerts</h3>
+                        <div id="recent-alerts" class="alerts-list">
+                            <p class="no-data">Loading alerts...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Devices Page -->
+            <div id="devices-content" class="content-page">
+                <div class="page-actions">
+                    <button class="btn btn-primary" onclick="loadDevices()">Refresh</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Device Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Location</th>
+                                <th>Last Update</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-table-body">
+                            <tr><td colspan="7">Loading devices...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Map Page -->
+            <div id="map-content" class="content-page">
+                <div class="map-container">
+                    <div id="map" class="map-view"></div>
+                    <div id="device-panel" class="device-panel">
+                        <h3>Devices</h3>
+                        <div id="device-list" class="device-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div id="history-content" class="content-page">
+                <div class="page-actions">
+                    <button class="btn" onclick="loadHistory('today')">Today</button>
+                    <button class="btn" onclick="loadHistory('7days')">7 Days</button>
+                    <button class="btn" onclick="loadHistory('30days')">30 Days</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Energy Generated (kWh)</th>
+                                <th>Energy Used (kWh)</th>
+                                <th>Battery Level (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <tr><td colspan="4">Loading history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Alerts Page -->
+            <div id="alerts-content" class="content-page">
+                <div class="page-actions">
+                    <button class="btn btn-primary" onclick="loadAlerts()">Refresh</button>
+                </div>
+                <div class="alerts-list-full" id="alerts-list-full">
+                    <p class="no-data">Loading alerts...</p>
+                </div>
+            </div>
+
+            <!-- Prediction Page -->
+            <div id="prediction-content" class="content-page">
+                <div class="prediction-summary">
+                    <div class="card">
+                        <h3>Tomorrow's Predicted Energy</h3>
+                        <p class="card-value" id="predicted-energy">Calculating...</p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>24-Hour Energy Prediction</h3>
+                    <canvas id="prediction-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Export Page -->
+            <div id="export-content" class="content-page">
+                <div class="export-options">
+                    <div class="card">
+                        <h3>📊 Export Energy Logs</h3>
+                        <p>Download all energy generation and consumption data</p>
+                        <button class="btn btn-primary" onclick="exportEnergyLogs()">Download CSV</button>
+                    </div>
+                    <div class="card">
+                        <h3>⚡ Export Device Data</h3>
+                        <p>Download all device information and status</p>
+                        <button class="btn btn-primary" onclick="exportDevices()">Download CSV</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Page (Admin Only) -->
+            <div id="users-content" class="content-page">
+                <div class="page-actions">
+                    <button class="btn btn-primary" onclick="showAddUserModal()">Add User</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="5">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="add-user-modal" class="modal">
+        <div class="modal-content">
+            <h2>Add New User</h2>
+            <form id="add-user-form">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="new-user-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="new-user-password" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="new-user-role" required>
+                        <option value="viewer">Viewer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app_v2.js"></script>
+</body>
+</html>
+

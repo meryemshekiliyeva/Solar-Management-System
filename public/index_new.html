@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Solar Management Platform</title>
+    <link rel="stylesheet" href="css/style_v2.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+</head>
+<body>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status">
+        <span class="status-dot"></span>
+        <span class="status-text">Connected</span>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="page active">
+        <div class="login-container">
+            <div class="login-box">
+                <div class="login-header">
+                    <div class="logo">🌞</div>
+                    <h1>Solar Management Platform</h1>
+                    <p>Enterprise Energy Monitoring System</p>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="login-email" placeholder="admin@university.edu" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span>Sign In</span>
+                    </button>
+                    <div id="login-error" class="error-message"></div>
+                </form>
+                <div class="login-footer">
+                    <p>Default credentials: admin@university.edu / admin123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <span class="logo-icon">🌞</span>
+                    <span class="logo-text">Solar Platform</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+                    <span>☰</span>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" data-page="dashboard" class="nav-item active" title="Dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="#" data-page="devices" class="nav-item" title="Devices">
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-text">Devices</span>
+                </a>
+                <a href="#" data-page="map" class="nav-item" title="Map">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-text">Map</span>
+                </a>
+                <a href="#" data-page="history" class="nav-item" title="History">
+                    <span class="nav-icon">📜</span>
+                    <span class="nav-text">History</span>
+                </a>
+                <a href="#" data-page="alerts" class="nav-item" title="Alerts">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">Alerts</span>
+                    <span class="badge-count" id="alert-count">0</span>
+                </a>
+                <a href="#" data-page="prediction" class="nav-item" title="Prediction">
+                    <span class="nav-icon">🔮</span>
+                    <span class="nav-text">Prediction</span>
+                </a>
+                <a href="#" data-page="export" class="nav-item" title="Export">
+                    <span class="nav-icon">📥</span>
+                    <span class="nav-text">Export</span>
+                </a>
+                <a href="#" data-page="users" class="nav-item admin-only" title="Users">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Users</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="theme-toggle">
+                    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+                        <span id="theme-icon">🌙</span>
+                        <span class="nav-text">Dark Mode</span>
+                    </button>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary btn-block">
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <div class="breadcrumb" id="breadcrumb">
+                        <span>Dashboard</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-item last-update">
+                        <span class="label">Last Update:</span>
+                        <span class="value" id="last-update">Just now</span>
+                    </div>
+                    <div class="header-item user-profile">
+                        <span id="user-email"></span>
+                        <span id="user-role" class="role-badge"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <div id="dashboard-content" class="content-page active">
+                <!-- System Health & Quick Actions -->
+                <div class="top-section">
+                    <div class="system-health-card">
+                        <div class="health-header">
+                            <h3>System Health</h3>
+                            <div class="health-status" id="system-health-status">
+                                <span class="status-indicator optimal"></span>
+                                <span class="status-text">Optimal</span>
+                            </div>
+                        </div>
+                        <div class="health-metrics">
+                            <div class="health-metric">
+                                <span class="metric-label">Uptime</span>
+                                <span class="metric-value" id="system-uptime">99.8%</span>
+                            </div>
+                            <div class="health-metric">
+                                <span class="metric-label">Efficiency</span>
+                                <span class="metric-value" id="system-efficiency">94.2%</span>
+                            </div>
+                            <div class="health-metric">
+                                <span class="metric-label">Response Time</span>
+                                <span class="metric-value" id="system-response">42ms</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="quick-actions-card">
+                        <h3>Quick Actions</h3>
+                        <div class="quick-actions">
+                            <button class="action-btn" onclick="loadDevices(); navigateToPage('devices')">
+                                <span class="action-icon">⚡</span>
+                                <span>Manage Devices</span>
+                            </button>
+                            <button class="action-btn" onclick="loadAlerts(); navigateToPage('alerts')">
+                                <span class="action-icon">🔔</span>
+                                <span>View Alerts</span>
+                            </button>
+                            <button class="action-btn" onclick="exportEnergyLogs()">
+                                <span class="action-icon">📥</span>
+                                <span>Export Data</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="cards-grid">
+                    <div class="stat-card">
+                        <div class="card-header">
+                            <span class="card-icon green">⚡</span>
+                            <span class="card-trend up">↑ 12.5%</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Energy Generated</h4>
+                            <p class="card-value" id="total-generated">0 kWh</p>
+                            <span class="card-subtitle">Today</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-header">
+                            <span class="card-icon blue">🔋</span>
+                            <span class="card-trend">85%</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Battery Level</h4>
+                            <p class="card-value" id="battery-level">0%</p>
+                            <div class="battery-progress">
+                                <div class="battery-fill" id="battery-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-header">
+                            <span class="card-icon orange">💡</span>
+                            <span class="card-trend down">↓ 3.2%</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Energy Consumed</h4>
+                            <p class="card-value" id="total-consumed">0 kWh</p>
+                            <span class="card-subtitle">Today</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-header">
+                            <span class="card-icon purple">📱</span>
+                            <span class="card-trend">5/5</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Active Devices</h4>
+                            <p class="card-value" id="active-devices">0</p>
+                            <span class="card-subtitle">Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Energy Flow</h3>
+                            <div class="chart-controls">
+                                <button class="chart-btn active">24H</button>
+                                <button class="chart-btn">7D</button>
+                                <button class="chart-btn">30D</button>
+                            </div>
+                        </div>
+                        <canvas id="energy-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Battery Performance</h3>
+                            <div class="chart-controls">
+                                <button class="chart-btn active">24H</button>
+                                <button class="chart-btn">7D</button>
+                                <button class="chart-btn">30D</button>
+                            </div>
+                        </div>
+                        <canvas id="battery-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Live Monitoring & Alerts -->
+                <div class="bottom-section">
+                    <div class="live-data-card">
+                        <h3>Live Sensor Data</h3>
+                        <div class="sensor-grid">
+                            <div class="sensor-item">
+                                <div class="sensor-icon">⚡</div>
+                                <div class="sensor-info">
+                                    <span class="sensor-label">Voltage</span>
+                                    <span class="sensor-value" id="live-voltage">0 V</span>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-icon">🔌</div>
+                                <div class="sensor-info">
+                                    <span class="sensor-label">Current</span>
+                                    <span class="sensor-value" id="live-current">0 A</span>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-icon">🌡️</div>
+                                <div class="sensor-info">
+                                    <span class="sensor-label">Temperature</span>
+                                    <span class="sensor-value" id="live-temperature">0 °C</span>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-icon">⚙️</div>
+                                <div class="sensor-info">
+                                    <span class="sensor-label">Power</span>
+                                    <span class="sensor-value" id="live-power">0 W</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alerts-card">
+                        <div class="alerts-header">
+                            <h3>Recent Alerts</h3>
+                            <button class="btn-link" onclick="navigateToPage('alerts')">View All</button>
+                        </div>
+                        <div id="recent-alerts" class="alerts-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Devices Page -->
+            <div id="devices-content" class="content-page">
+                <div class="page-header">
+                    <div class="page-actions">
+                        <input type="text" id="device-search" placeholder="Search devices..." class="search-input">
+                        <button class="btn btn-primary" onclick="loadDevices()">
+                            <span>🔄 Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Device Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Signal</th>
+                                <th>Uptime</th>
+                                <th>Last Update</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-table-body">
+                            <tr class="skeleton-row">
+                                <td colspan="8">
+                                    <div class="skeleton-loading">
+                                        <div class="skeleton-line"></div>
+                                        <div class="skeleton-line"></div>
+                                        <div class="skeleton-line"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Map Page -->
+            <div id="map-content" class="content-page">
+                <div class="map-wrapper">
+                    <div class="map-container">
+                        <div id="map" class="map-view"></div>
+                        <div id="device-panel" class="device-panel">
+                            <div class="panel-header">
+                                <h3>Devices</h3>
+                                <button class="panel-toggle" onclick="toggleDevicePanel()">◀</button>
+                            </div>
+                            <div id="device-list" class="device-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div id="history-content" class="content-page">
+                <div class="page-header">
+                    <div class="page-actions">
+                        <button class="btn" onclick="loadHistory('today')">Today</button>
+                        <button class="btn" onclick="loadHistory('7days')">7 Days</button>
+                        <button class="btn" onclick="loadHistory('30days')">30 Days</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Energy Generated (kWh)</th>
+                                <th>Energy Used (kWh)</th>
+                                <th>Battery Level (%)</th>
+                                <th>Efficiency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <tr class="skeleton-row">
+                                <td colspan="5">
+                                    <div class="skeleton-loading">
+                                        <div class="skeleton-line"></div>
+                                        <div class="skeleton-line"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Alerts Page -->
+            <div id="alerts-content" class="content-page">
+                <div class="page-header">
+                    <div class="alert-filters">
+                        <button class="filter-btn active" data-filter="all" onclick="filterAlerts('all')">All</button>
+                        <button class="filter-btn" data-filter="high" onclick="filterAlerts('high')">High</button>
+                        <button class="filter-btn" data-filter="medium" onclick="filterAlerts('medium')">Medium</button>
+                        <button class="filter-btn" data-filter="low" onclick="filterAlerts('low')">Low</button>
+                    </div>
+                    <div class="page-actions">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="auto-refresh-alerts" checked>
+                            <span class="slider"></span>
+                            <span class="toggle-label">Auto-refresh</span>
+                        </label>
+                        <button class="btn btn-primary" onclick="loadAlerts()">
+                            <span>🔄 Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="alerts-grid" id="alerts-list-full"></div>
+            </div>
+
+            <!-- Prediction Page -->
+            <div id="prediction-content" class="content-page">
+                <div class="prediction-header">
+                    <div class="prediction-card">
+                        <h3>Tomorrow's Forecast</h3>
+                        <div class="prediction-value">
+                            <span class="value" id="predicted-energy">0</span>
+                            <span class="unit">kWh</span>
+                        </div>
+                        <div class="confidence-range">
+                            <span class="range-text">Confidence: </span>
+                            <span class="range-value" id="confidence-range">±5%</span>
+                        </div>
+                    </div>
+                    <div class="prediction-card">
+                        <h3>Weekly Trend</h3>
+                        <div class="trend-indicator">
+                            <span class="trend-icon">📈</span>
+                            <span class="trend-text" id="weekly-trend">+8.5%</span>
+                        </div>
+                        <p class="trend-description">Compared to last week</p>
+                    </div>
+                    <div class="prediction-card">
+                        <h3>Weather Impact</h3>
+                        <div class="weather-info">
+                            <span class="weather-icon">☀️</span>
+                            <span class="weather-text" id="weather-impact">Sunny - High Production</span>
+                        </div>
+                        <p class="weather-description">Optimal conditions expected</p>
+                    </div>
+                </div>
+                <div class="charts-section">
+                    <div class="chart-card full-width">
+                        <div class="chart-header">
+                            <h3>24-Hour Energy Prediction</h3>
+                        </div>
+                        <canvas id="prediction-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>7-Day Forecast</h3>
+                    </div>
+                    <canvas id="weekly-prediction-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Export Page -->
+            <div id="export-content" class="content-page">
+                <div class="export-section">
+                    <div class="export-config-card">
+                        <h3>Export Configuration</h3>
+                        <form id="export-form">
+                            <div class="form-group">
+                                <label>Date Range</label>
+                                <div class="date-range">
+                                    <input type="date" id="export-start-date" class="form-control">
+                                    <span>to</span>
+                                    <input type="date" id="export-end-date" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Device Filter</label>
+                                <select id="export-device-filter" class="form-control">
+                                    <option value="all">All Devices</option>
+                                    <option value="solar">Solar Panels Only</option>
+                                    <option value="battery">Batteries Only</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Export Format</label>
+                                <select id="export-format" class="form-control">
+                                    <option value="csv">CSV</option>
+                                    <option value="json">JSON</option>
+                                    <option value="xlsx">Excel (XLSX)</option>
+                                    <option value="pdf">PDF Report</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Data Type</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="export-type" value="energy" checked>
+                                        <span>Energy Logs</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="export-type" value="devices">
+                                        <span>Device Data</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="export-type" value="alerts">
+                                        <span>Alerts History</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-lg" onclick="performExport()">
+                                <span>📥 Export Data</span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="export-preview-card">
+                        <h3>Export Summary</h3>
+                        <div class="export-stats">
+                            <div class="export-stat">
+                                <span class="stat-label">Records</span>
+                                <span class="stat-value" id="export-records">0</span>
+                            </div>
+                            <div class="export-stat">
+                                <span class="stat-label">Size</span>
+                                <span class="stat-value" id="export-size">0 KB</span>
+                            </div>
+                            <div class="export-stat">
+                                <span class="stat-label">Duration</span>
+                                <span class="stat-value" id="export-duration">-</span>
+                            </div>
+                        </div>
+                        <div class="export-history">
+                            <h4>Recent Exports</h4>
+                            <div id="export-history-list">
+                                <p class="no-data">No recent exports</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Page (Admin Only) -->
+            <div id="users-content" class="content-page">
+                <div class="page-header">
+                    <div class="page-actions">
+                        <input type="text" id="user-search" placeholder="Search users..." class="search-input" oninput="searchUsers()">
+                        <button class="btn btn-primary" onclick="showAddUserModal()">
+                            <span>➕ Add User</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr class="skeleton-row">
+                                <td colspan="7">
+                                    <div class="skeleton-loading">
+                                        <div class="skeleton-line"></div>
+                                        <div class="skeleton-line"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer-left">
+                    <span>© 2026 Solar Management Platform</span>
+                    <span class="separator">|</span>
+                    <span>Version 2.0.0</span>
+                </div>
+                <div class="footer-right">
+                    <span>System Status: <span class="status-ok">●</span> Operational</span>
+                    <span class="separator">|</span>
+                    <span>Latency: <span id="footer-latency">42ms</span></span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Device Detail Modal -->
+    <div id="device-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2 id="device-modal-title">Device Details</h2>
+                <button class="modal-close" onclick="closeDeviceModal()">×</button>
+            </div>
+            <div class="modal-body" id="device-modal-body">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="add-user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New User</h2>
+                <button class="modal-close" onclick="closeAddUserModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-user-form">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="new-user-email" class="form-control" placeholder="user@university.edu" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="new-user-password" class="form-control" placeholder="Min. 8 characters" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="new-user-role" class="form-control" required>
+                            <option value="viewer">Viewer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary">Create User</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app_v2.js"></script>
+</body>
+</html>

@@ -15,11 +15,47 @@ function isAdmin(req, res, next) {
 
 // Get all users (admin only)
 router.get('/', verifyToken, isAdmin, (req, res) => {
-    db.all('SELECT id, email, role, created_at FROM users', (err, users) => {
+    db.all('SELECT id, email, role, full_name, approved, created_at FROM users', (err, users) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
         }
         res.json(users);
+    });
+});
+
+// Get pending users (admin only)
+router.get('/pending', verifyToken, isAdmin, (req, res) => {
+    db.all('SELECT id, email, role, full_name, created_at FROM users WHERE approved = 0', (err, users) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(users);
+    });
+});
+
+// Approve user (admin only)
+router.put('/:id/approve', verifyToken, isAdmin, (req, res) => {
+    db.run('UPDATE users SET approved = 1 WHERE id = ?', [req.params.id], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ message: 'User approved successfully' });
+    });
+});
+
+// Reject user (admin only) - deletes the user
+router.put('/:id/reject', verifyToken, isAdmin, (req, res) => {
+    db.run('DELETE FROM users WHERE id = ?', [req.params.id], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ message: 'User rejected and removed' });
     });
 });
 
@@ -33,8 +69,8 @@ router.post('/', verifyToken, isAdmin, (req, res) => {
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    db.run('INSERT INTO users (email, password, role) VALUES (?, ?, ?)',
-        [email, hashedPassword, role],
+    db.run('INSERT INTO users (email, password, role, approved) VALUES (?, ?, ?, ?)',
+        [email, hashedPassword, role, 1],
         function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE')) {

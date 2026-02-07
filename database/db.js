@@ -12,14 +12,30 @@ const db = new sqlite3.Database(path.join(__dirname, 'solar_system.db'), (err) =
 });
 
 function initializeDatabase() {
-    // Users table
+    // Users table with all columns
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT NOT NULL,
+        full_name TEXT,
+        approved INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+    )`, (err) => {
+        if (err) {
+            console.error('Error creating users table:', err);
+            return;
+        }
+        
+        // Insert default admin user
+        const defaultPassword = bcrypt.hashSync('admin123', 10);
+        db.run(`INSERT OR IGNORE INTO users (email, password, role, full_name, approved) VALUES (?, ?, ?, ?, ?)`,
+            ['admin@university.edu', defaultPassword, 'admin', 'System Administrator', 1],
+            (err) => {
+                if (err) console.error('Error inserting admin:', err);
+            }
+        );
+    });
 
     // Devices table
     db.run(`CREATE TABLE IF NOT EXISTS devices (
@@ -50,12 +66,6 @@ function initializeDatabase() {
         timestamp DATETIME NOT NULL,
         status TEXT NOT NULL
     )`);
-
-    // Insert default admin user
-    const defaultPassword = bcrypt.hashSync('admin123', 10);
-    db.run(`INSERT OR IGNORE INTO users (email, password, role) VALUES (?, ?, ?)`,
-        ['admin@university.edu', defaultPassword, 'admin']
-    );
 
     // Insert sample devices
     const devices = [
