@@ -700,6 +700,13 @@ async function loadDashboard() {
         // Load charts
         loadEnergyChart();
         loadBatteryChart();
+        
+        // Load approvals on dashboard based on role
+        if (currentUser.role === 'super_admin') {
+            loadDashboardAdminApprovals();
+        } else if (currentUser.role === 'admin') {
+            loadDashboardViewerApprovals();
+        }
 
     } catch (error) {
         console.error('Error loading dashboard:', error);
@@ -1751,6 +1758,213 @@ async function loadUsers() {
     } catch (error) {
         console.error('Error loading users:', error);
         showToast('Error', 'Failed to load users', 'error');
+    }
+}
+
+// Load admin approval requests on dashboard (Super Admin only)
+async function loadDashboardAdminApprovals() {
+    const dashboardSection = document.getElementById('dashboard-admin-approvals');
+    const tableBody = document.getElementById('dashboard-admin-approvals-table');
+    const countBadge = document.getElementById('dashboard-admin-count');
+    
+    if (!dashboardSection) return;
+    
+    // Show the section for super admin
+    dashboardSection.style.display = 'block';
+    
+    try {
+        const response = await fetch(`${API_URL}/users/pending`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load admin approvals');
+        }
+        
+        const pendingAdmins = await response.json();
+        
+        // Update count
+        countBadge.textContent = pendingAdmins.length;
+        
+        if (pendingAdmins.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No pending admin requests</td></tr>';
+            return;
+        }
+        
+        // Load universities for display
+        const universitiesResponse = await fetch('/api/universities/all', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const universities = await universitiesResponse.json();
+        const universityMap = {};
+        universities.forEach(uni => {
+            universityMap[uni.id] = uni.name;
+        });
+        
+        tableBody.innerHTML = pendingAdmins.map(admin => `
+            <tr>
+                <td><strong>${admin.full_name || 'N/A'}</strong></td>
+                <td>${admin.email}</td>
+                <td><span class="badge info">${universityMap[admin.university_id] || 'N/A'}</span></td>
+                <td>${new Date(admin.created_at).toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-success" style="padding: 8px 16px; font-size: 13px; margin-right: 8px;" onclick="approveDashboardAdmin(${admin.id})">
+                        ✓ Approve
+                    </button>
+                    <button class="btn btn-danger" style="padding: 8px 16px; font-size: 13px;" onclick="rejectDashboardAdmin(${admin.id})">
+                        ✗ Reject
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading dashboard admin approvals:', error);
+        tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Error loading admin approvals</td></tr>';
+    }
+}
+
+// Approve admin from dashboard (Super Admin only)
+async function approveDashboardAdmin(userId) {
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/approve`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast('Success', 'Admin approved successfully', 'success');
+            loadDashboardAdminApprovals(); // Reload the dashboard approvals
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to approve admin', 'error');
+        }
+    } catch (error) {
+        console.error('Error approving admin:', error);
+        showToast('Error', 'Failed to approve admin', 'error');
+    }
+}
+
+// Reject admin from dashboard (Super Admin only)
+async function rejectDashboardAdmin(userId) {
+    if (!confirm('Are you sure you want to reject this admin request? This will permanently delete their account.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/reject`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast('Success', 'Admin request rejected and removed', 'success');
+            loadDashboardAdminApprovals(); // Reload the dashboard approvals
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to reject admin', 'error');
+        }
+    } catch (error) {
+        console.error('Error rejecting admin:', error);
+        showToast('Error', 'Failed to reject admin', 'error');
+    }
+}
+
+// Load viewer approval requests on dashboard (Admin only - not Super Admin)
+async function loadDashboardViewerApprovals() {
+    const dashboardSection = document.getElementById('dashboard-viewer-approvals');
+    const tableBody = document.getElementById('dashboard-viewer-approvals-table');
+    const countBadge = document.getElementById('dashboard-viewer-count');
+    
+    if (!dashboardSection) return;
+    
+    // Show the section for regular admin
+    dashboardSection.style.display = 'block';
+    
+    try {
+        const response = await fetch(`${API_URL}/users/pending`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load viewer approvals');
+        }
+        
+        const pendingViewers = await response.json();
+        
+        // Update count
+        countBadge.textContent = pendingViewers.length;
+        
+        if (pendingViewers.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No pending viewer requests</td></tr>';
+            return;
+        }
+        
+        tableBody.innerHTML = pendingViewers.map(viewer => `
+            <tr>
+                <td><strong>${viewer.full_name || 'N/A'}</strong></td>
+                <td>${viewer.email}</td>
+                <td>${new Date(viewer.created_at).toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-success" style="padding: 8px 16px; font-size: 13px; margin-right: 8px;" onclick="approveDashboardViewer(${viewer.id})">
+                        ✓ Approve
+                    </button>
+                    <button class="btn btn-danger" style="padding: 8px 16px; font-size: 13px;" onclick="rejectDashboardViewer(${viewer.id})">
+                        ✗ Reject
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading dashboard viewer approvals:', error);
+        tableBody.innerHTML = '<tr><td colspan="4" class="no-data">Error loading viewer approvals</td></tr>';
+    }
+}
+
+// Approve viewer from dashboard (Admin only)
+async function approveDashboardViewer(userId) {
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/approve`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast('Success', 'Viewer approved successfully', 'success');
+            loadDashboardViewerApprovals(); // Reload the dashboard approvals
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to approve viewer', 'error');
+        }
+    } catch (error) {
+        console.error('Error approving viewer:', error);
+        showToast('Error', 'Failed to approve viewer', 'error');
+    }
+}
+
+// Reject viewer from dashboard (Admin only)
+async function rejectDashboardViewer(userId) {
+    if (!confirm('Are you sure you want to reject this viewer request? This will permanently delete their account.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/reject`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast('Success', 'Viewer request rejected and removed', 'success');
+            loadDashboardViewerApprovals(); // Reload the dashboard approvals
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to reject viewer', 'error');
+        }
+    } catch (error) {
+        console.error('Error rejecting viewer:', error);
+        showToast('Error', 'Failed to reject viewer', 'error');
     }
 }
 

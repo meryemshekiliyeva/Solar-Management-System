@@ -248,6 +248,63 @@
                         </div>
                     </div>
 
+                    <!-- Admin Approvals Section (Super Admin Only) -->
+                    <div id="dashboard-admin-approvals" style="display: none; margin-bottom: 24px;">
+                        <div class="card" style="padding: 20px;">
+                            <div class="card-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h3 style="color: var(--text-primary); font-size: 20px; margin-bottom: 4px;">🔐 Admin Approval Requests</h3>
+                                    <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Review and approve pending admin registrations</p>
+                                </div>
+                                <span class="badge danger" id="dashboard-admin-count" style="font-size: 16px; padding: 8px 16px;">0</span>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>University</th>
+                                            <th>Registration Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboard-admin-approvals-table">
+                                        <tr><td colspan="5" class="no-data">No pending admin requests</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Viewer Approvals Section (Admin Only - Not Super Admin) -->
+                    <div id="dashboard-viewer-approvals" style="display: none; margin-bottom: 24px;">
+                        <div class="card" style="padding: 20px;">
+                            <div class="card-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h3 style="color: var(--text-primary); font-size: 20px; margin-bottom: 4px;">👁️ Viewer Approval Requests</h3>
+                                    <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Review and approve pending viewer registrations from your university</p>
+                                </div>
+                                <span class="badge warning" id="dashboard-viewer-count" style="font-size: 16px; padding: 8px 16px;">0</span>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Registration Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboard-viewer-approvals-table">
+                                        <tr><td colspan="4" class="no-data">No pending viewer requests</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Summary Cards -->
                     <div class="cards-grid">
                         <div class="card">

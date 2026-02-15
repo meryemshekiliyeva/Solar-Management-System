@@ -147,7 +147,8 @@ function authenticateUser(email, password, role, universityId, res) {
 
         // Verify university matches (except for admin/super_admin)
         if (!['admin', 'super_admin'].includes(role)) {
-            if (user.university_id !== universityId) {
+            // Convert to number for comparison (universityId from form is string)
+            if (user.university_id !== parseInt(universityId)) {
                 return res.status(401).json({ error: 'Invalid university for this account' });
             }
         }
