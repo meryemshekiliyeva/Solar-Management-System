@@ -1009,7 +1009,15 @@ function updateChartPeriod(period) {
 // Load Devices
 async function loadDevices() {
     try {
-        const response = await fetch(`${API_URL}/devices`, {
+        // Build query parameters for university filter
+        let queryParams = '';
+        if (currentUser.role === 'super_admin' && window.selectedUniversityId && window.selectedUniversityId !== 'all') {
+            queryParams = `?universityId=${window.selectedUniversityId}`;
+        } else if (currentUser.role === 'admin' && currentUser.universityId) {
+            queryParams = `?universityId=${currentUser.universityId}`;
+        }
+        
+        const response = await fetch(`${API_URL}/devices${queryParams}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const devices = await response.json();

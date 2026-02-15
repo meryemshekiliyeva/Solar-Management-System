@@ -14,6 +14,16 @@ router.get('/', (req, res) => {
     });
 });
 
+// Get all universities (alias for super admin dropdown)
+router.get('/all', (req, res) => {
+    db.all('SELECT * FROM universities ORDER BY name', (err, universities) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(universities);
+    });
+});
+
 // Get university by ID
 router.get('/:id', verifyToken, (req, res) => {
     db.get('SELECT * FROM universities WHERE id = ?', [req.params.id], (err, university) => {
