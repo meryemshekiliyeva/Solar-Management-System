@@ -36,7 +36,7 @@ router.post('/register', (req, res) => {
     // Validate email domain matches university
     const emailDomain = email.split('@')[1];
     
-    db.get('SELECT * FROM universities WHERE id = ?', [universityId], (err, university) => {
+    db.get('SELECT * FROM universities WHERE id = ?', [parseInt(universityId)], (err, university) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
         }
@@ -106,7 +106,7 @@ router.post('/login', (req, res) => {
     if (!['admin', 'super_admin'].includes(role)) {
         const emailDomain = email.split('@')[1];
         
-        db.get('SELECT * FROM universities WHERE id = ?', [universityId], (err, university) => {
+        db.get('SELECT * FROM universities WHERE id = ?', [parseInt(universityId)], (err, university) => {
             if (err) {
                 return res.status(500).json({ error: 'Database error' });
             }

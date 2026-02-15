@@ -362,6 +362,9 @@ function showApp() {
         document.querySelectorAll('.student-only').forEach(el => {
             el.style.display = '';
         });
+        document.querySelectorAll('.hide-for-student').forEach(el => {
+            el.style.display = 'none';
+        });
     } else if (currentUser.role === 'viewer') {
         document.querySelectorAll('.admin-only').forEach(el => {
             el.style.display = 'none';
