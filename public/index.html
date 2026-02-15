@@ -36,8 +36,24 @@
                 <div id="login-form-container" class="auth-form-container active">
                     <form id="login-form">
                         <div class="form-group">
+                            <label>Select Role</label>
+                            <select id="login-role" required onchange="handleLoginRoleChange()">
+                                <option value="">Choose your role</option>
+                                <option value="student">Student</option>
+                                <option value="viewer">Viewer</option>
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="login-university-group" style="display: none;">
+                            <label>Select University</label>
+                            <select id="login-university" required>
+                                <option value="">Choose your university</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label>Email Address</label>
-                            <input type="email" id="login-email" placeholder="admin@university.edu" required>
+                            <input type="email" id="login-email" placeholder="your-email@university.edu" required>
                         </div>
                         <div class="form-group">
                             <label>Password</label>
@@ -45,7 +61,7 @@
                         </div>
                         <button type="submit" class="btn btn-primary">Sign In</button>
                     </form>
-                    <p class="login-hint">Default admin: admin@university.edu / admin123</p>
+                    <p class="login-hint">Default super admin: admin@university.edu / admin123</p>
                 </div>
 
                 <!-- Register Form -->
@@ -56,8 +72,25 @@
                             <input type="text" id="register-name" placeholder="John Doe" required>
                         </div>
                         <div class="form-group">
+                            <label>Select Role</label>
+                            <select id="register-role" required onchange="handleRegisterRoleChange()">
+                                <option value="">Choose your role</option>
+                                <option value="student">Student</option>
+                                <option value="viewer">Viewer</option>
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="register-university-group" style="display: none;">
+                            <label>Select University</label>
+                            <select id="register-university" required onchange="updateRegisterEmailPlaceholder()">
+                                <option value="">Choose your university</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label>Email Address</label>
-                            <input type="email" id="register-email" placeholder="you@example.com" required>
+                            <input type="email" id="register-email" placeholder="your-email@university.edu" required>
+                            <small id="email-hint" style="color: #666; font-size: 0.85em;"></small>
                         </div>
                         <div class="form-group">
                             <label>Password</label>
@@ -119,7 +152,11 @@
                     <span class="icon">📥</span>
                     <span class="nav-item-text">Export</span>
                 </a>
-                <a href="#" data-page="users" class="nav-item admin-only">
+                <a href="#" data-page="calculator" class="nav-item student-only" style="display: none;">
+                    <span class="icon">🧮</span>
+                    <span class="nav-item-text">Calculator</span>
+                </a>
+                <a href="#" data-page="users" class="nav-item admin-only" style="display: none;">
                     <span class="icon">👥</span>
                     <span class="nav-item-text">Users</span>
                 </a>
@@ -316,6 +353,9 @@
                                     <span class="search-icon">🔍</span>
                                     <input type="text" class="search-input" id="device-search" placeholder="Search devices...">
                                 </div>
+                                <button class="btn btn-primary admin-only-action" style="display: none;" onclick="showAddPanelModal()">
+                                    <span>➕</span> Add Panel
+                                </button>
                                 <button class="btn btn-primary" onclick="loadDevices()">
                                     <span>🔄</span> Refresh
                                 </button>
@@ -327,15 +367,16 @@
                                     <th>ID</th>
                                     <th>Device Name</th>
                                     <th>Type</th>
+                                    <th>Capacity</th>
                                     <th>Status</th>
-                                    <th>Signal</th>
-                                    <th>Uptime</th>
+                                    <th>Location</th>
+                                    <th>University</th>
                                     <th>Last Update</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="devices-table-body">
-                                <tr><td colspan="8" class="no-data">Loading devices...</td></tr>
+                                <tr><td colspan="9" class="no-data">Loading devices...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -499,6 +540,109 @@
                     </div>
                 </div>
 
+                <!-- Student Dashboard -->
+                <div id="student-dashboard-content" class="content-page" style="display: none;">
+                    <!-- University Filter -->
+                    <div class="card" style="margin-bottom: 24px; padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <label style="font-weight: 600; color: var(--text-primary);">Select University:</label>
+                            <select id="student-university-filter" style="flex: 1; max-width: 400px; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                                <option value="">Loading universities...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Energy Stats Cards -->
+                    <div class="cards-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Weekly Energy Production</div>
+                                    <div class="card-value" id="student-weekly-production">0 kWh</div>
+                                </div>
+                                <div class="card-icon green">⚡</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Monthly Energy Production</div>
+                                    <div class="card-value" id="student-monthly-production">0 kWh</div>
+                                </div>
+                                <div class="card-icon blue">📊</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Yearly Energy Production</div>
+                                    <div class="card-value" id="student-yearly-production">0 kWh</div>
+                                </div>
+                                <div class="card-icon purple">📈</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cards-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Weekly Energy Consumption</div>
+                                    <div class="card-value" id="student-weekly-consumption">0 kWh</div>
+                                </div>
+                                <div class="card-icon orange">💡</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Monthly Energy Consumption</div>
+                                    <div class="card-value" id="student-monthly-consumption">0 kWh</div>
+                                </div>
+                                <div class="card-icon red">📉</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Yearly Energy Consumption</div>
+                                    <div class="card-value" id="student-yearly-consumption">0 kWh</div>
+                                </div>
+                                <div class="card-icon pink">📊</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cards-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Number of Solar Panels</div>
+                                    <div class="card-value" id="student-panel-count">0</div>
+                                </div>
+                                <div class="card-icon yellow">☀️</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculator Page (Student) -->
+                <div id="calculator-content" class="content-page" style="display: none;">
+                    <div class="card" style="padding: 40px; text-align: center;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">🧮</div>
+                        <h2 style="color: var(--text-primary); margin-bottom: 16px;">Solar Calculator</h2>
+                        <p style="color: var(--text-secondary); font-size: 18px; margin-bottom: 24px;">
+                            Calculator logic will be added later.
+                        </p>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                            <p style="color: var(--text-secondary); margin: 0;">
+                                This feature is under development and will include advanced solar energy calculations, 
+                                cost estimations, and ROI analysis.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Users Page (Admin Only) -->
                 <div id="users-content" class="content-page">
                     <!-- Pending Approvals -->
@@ -599,6 +743,125 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
                 <button type="submit" form="add-user-form" class="btn btn-primary">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Panel Modal -->
+    <div id="add-panel-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Solar Panel</h3>
+                <button class="modal-close" onclick="closeAddPanelModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-panel-form">
+                    <div class="form-group">
+                        <label>Panel Name</label>
+                        <input type="text" id="new-panel-name" placeholder="e.g., Solar Panel 4" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="new-panel-type" required>
+                            <option value="solar_panel">Solar Panel</option>
+                            <option value="battery">Battery Storage</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Capacity (kW)</label>
+                        <input type="number" step="0.1" id="new-panel-capacity" placeholder="e.g., 5.5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="new-panel-status" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="new-panel-location" placeholder="e.g., Engineering Building" required>
+                    </div>
+                    <div class="form-group">
+                        <label>University</label>
+                        <select id="new-panel-university" required>
+                            <option value="">Select University</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="number" step="0.000001" id="new-panel-latitude" placeholder="e.g., 40.7128">
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="number" step="0.000001" id="new-panel-longitude" placeholder="e.g., -74.0060">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddPanelModal()">Cancel</button>
+                <button type="submit" form="add-panel-form" class="btn btn-primary">Add Panel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Panel Modal -->
+    <div id="edit-panel-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Panel Information</h3>
+                <button class="modal-close" onclick="closeEditPanelModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-panel-form">
+                    <input type="hidden" id="edit-panel-id">
+                    <div class="form-group">
+                        <label>Panel Name</label>
+                        <input type="text" id="edit-panel-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="edit-panel-type" required>
+                            <option value="solar_panel">Solar Panel</option>
+                            <option value="battery">Battery Storage</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Capacity (kW)</label>
+                        <input type="number" step="0.1" id="edit-panel-capacity" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="edit-panel-status" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="edit-panel-location" required>
+                    </div>
+                    <div class="form-group">
+                        <label>University</label>
+                        <select id="edit-panel-university" required>
+                            <option value="">Select University</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="number" step="0.000001" id="edit-panel-latitude">
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="number" step="0.000001" id="edit-panel-longitude">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditPanelModal()">Cancel</button>
+                <button type="submit" form="edit-panel-form" class="btn btn-primary">Save Changes</button>
             </div>
         </div>
     </div>

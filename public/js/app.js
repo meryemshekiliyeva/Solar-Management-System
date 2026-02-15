@@ -50,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup sidebar toggle
     document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
     
+    // Load universities for login/register forms
+    loadUniversities();
+    
     if (token) {
         verifyTokenAndLoadApp();
     } else {
@@ -90,6 +93,86 @@ function restoreSidebarState() {
     }
 }
 
+// Load universities
+async function loadUniversities() {
+    try {
+        const response = await fetch(`${API_URL}/universities`);
+        const universities = await response.json();
+        
+        const loginSelect = document.getElementById('login-university');
+        const registerSelect = document.getElementById('register-university');
+        
+        universities.forEach(uni => {
+            const option1 = document.createElement('option');
+            option1.value = uni.id;
+            option1.textContent = `${uni.name} (${uni.code})`;
+            option1.dataset.domain = uni.domain;
+            loginSelect.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = uni.id;
+            option2.textContent = `${uni.name} (${uni.code})`;
+            option2.dataset.domain = uni.domain;
+            registerSelect.appendChild(option2);
+        });
+    } catch (error) {
+        console.error('Error loading universities:', error);
+    }
+}
+
+// Handle login role change
+function handleLoginRoleChange() {
+    const role = document.getElementById('login-role').value;
+    const universityGroup = document.getElementById('login-university-group');
+    const universitySelect = document.getElementById('login-university');
+    
+    if (role === 'admin' || role === 'super_admin') {
+        universityGroup.style.display = 'none';
+        universitySelect.required = false;
+    } else if (role) {
+        universityGroup.style.display = 'block';
+        universitySelect.required = true;
+    } else {
+        universityGroup.style.display = 'none';
+        universitySelect.required = false;
+    }
+}
+
+// Handle register role change
+function handleRegisterRoleChange() {
+    const role = document.getElementById('register-role').value;
+    const universityGroup = document.getElementById('register-university-group');
+    const universitySelect = document.getElementById('register-university');
+    
+    if (role === 'admin' || role === 'super_admin') {
+        universityGroup.style.display = 'none';
+        universitySelect.required = false;
+    } else if (role) {
+        universityGroup.style.display = 'block';
+        universitySelect.required = true;
+    } else {
+        universityGroup.style.display = 'none';
+        universitySelect.required = false;
+    }
+}
+
+// Update register email placeholder
+function updateRegisterEmailPlaceholder() {
+    const universitySelect = document.getElementById('register-university');
+    const emailInput = document.getElementById('register-email');
+    const emailHint = document.getElementById('email-hint');
+    
+    const selectedOption = universitySelect.options[universitySelect.selectedIndex];
+    if (selectedOption && selectedOption.dataset.domain) {
+        const domain = selectedOption.dataset.domain;
+        emailInput.placeholder = `your-name@${domain}`;
+        emailHint.textContent = `Please use your university email ending with @${domain}`;
+    } else {
+        emailInput.placeholder = 'your-email@university.edu';
+        emailHint.textContent = '';
+    }
+}
+
 // Auth form switching
 function showAuthForm(type) {
     const loginTab = document.getElementById('login-tab');
@@ -119,6 +202,8 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     e.preventDefault();
     
     const fullName = document.getElementById('register-name').value;
+    const role = document.getElementById('register-role').value;
+    const universityId = document.getElementById('register-university').value || null;
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-password-confirm').value;
@@ -127,6 +212,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     if (password !== confirmPassword) {
         authMessage.className = 'auth-message error';
         authMessage.innerHTML = 'Passwords do not match';
+        authMessage.style.display = 'block';
         return;
     }
     
@@ -134,7 +220,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         const response = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, fullName })
+            body: JSON.stringify({ email, password, fullName, role, universityId })
         });
         
         const data = await response.json();
@@ -146,14 +232,17 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
                 Your account is pending admin approval. You will be notified via email when approved.<br>
                 <strong>Contact:</strong> <a href="mailto:admin@university.edu">admin@university.edu</a>
             `;
+            authMessage.style.display = 'block';
             document.getElementById('register-form').reset();
         } else {
             authMessage.className = 'auth-message error';
             authMessage.textContent = data.error || 'Registration failed';
+            authMessage.style.display = 'block';
         }
     } catch (error) {
         authMessage.className = 'auth-message error';
         authMessage.textContent = 'Connection error. Please try again.';
+        authMessage.style.display = 'block';
     }
 });
 
@@ -161,6 +250,8 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const role = document.getElementById('login-role').value;
+    const universityId = document.getElementById('login-university').value || null;
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     const authMessage = document.getElementById('auth-message');
@@ -169,7 +260,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, role, universityId })
         });
         
         const data = await response.json();
@@ -178,7 +269,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             token = data.token;
             localStorage.setItem('token', token);
             currentUser = data.user;
-            showToast('Login Successful', `Welcome back, ${data.user.email}!`, 'success');
+            showToast('Login Successful', `Welcome back, ${data.user.fullName || data.user.email}!`, 'success');
             showApp();
         } else if (response.status === 403) {
             authMessage.className = 'auth-message warning';
@@ -187,13 +278,16 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
                 Your account (${data.email}) is awaiting admin approval.<br>
                 Please contact the administrator: <a href="mailto:admin@university.edu?subject=Account Approval Request&body=Hello, I am requesting approval for my account: ${data.email}">admin@university.edu</a>
             `;
+            authMessage.style.display = 'block';
         } else {
             authMessage.className = 'auth-message error';
             authMessage.textContent = data.error || 'Login failed';
+            authMessage.style.display = 'block';
         }
     } catch (error) {
         authMessage.className = 'auth-message error';
         authMessage.textContent = 'Connection error. Please try again.';
+        authMessage.style.display = 'block';
     }
 });
 
@@ -249,18 +343,48 @@ function showApp() {
     updateLastUpdateTime();
     setInterval(updateLastUpdateTime, 60000);
     
-    // Show admin menu items
-    if (currentUser.role === 'admin') {
+    // Show/hide menu items based on role
+    if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
         document.querySelectorAll('.admin-only').forEach(el => {
-            el.classList.add('visible');
+            el.style.display = '';
+        });
+        document.querySelectorAll('.admin-only-action').forEach(el => {
+            el.style.display = '';
+        });
+        document.querySelectorAll('.student-only').forEach(el => {
+            el.style.display = 'none';
+        });
+    } else if (currentUser.role === 'student') {
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.admin-only-action').forEach(el => {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.student-only').forEach(el => {
+            el.style.display = '';
+        });
+    } else if (currentUser.role === 'viewer') {
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.admin-only-action').forEach(el => {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.student-only').forEach(el => {
+            el.style.display = 'none';
         });
     }
     
     // Initialize WebSocket
     initWebSocket();
     
-    // Load dashboard
-    loadDashboard();
+    // Load appropriate dashboard based on role
+    if (currentUser.role === 'student') {
+        loadStudentDashboard();
+    } else {
+        loadDashboard();
+    }
     
     // Setup navigation
     setupNavigation();
@@ -329,6 +453,8 @@ function navigateToPage(page) {
     // Update page title
     const titles = {
         dashboard: 'Dashboard',
+        'student-dashboard': 'Student Dashboard',
+        calculator: 'Solar Calculator',
         devices: 'Device Management',
         map: 'Map View',
         history: 'Energy History',
@@ -347,6 +473,12 @@ function navigateToPage(page) {
     switch(page) {
         case 'dashboard':
             loadDashboard();
+            break;
+        case 'student-dashboard':
+            loadStudentDashboard();
+            break;
+        case 'calculator':
+            // Calculator page - just display, no data to load
             break;
         case 'devices':
             loadDevices();
@@ -485,6 +617,115 @@ async function loadDashboard() {
         console.error('Error loading dashboard:', error);
         showToast('Error', 'Failed to load dashboard data', 'error');
     }
+}
+
+// Load Student Dashboard
+async function loadStudentDashboard() {
+    try {
+        // Show student dashboard content
+        document.querySelectorAll('.content-page').forEach(el => el.style.display = 'none');
+        const studentDashboard = document.getElementById('student-dashboard-content');
+        if (studentDashboard) {
+            studentDashboard.style.display = 'block';
+            studentDashboard.classList.add('active');
+        }
+        
+        // Load universities into filter
+        const universitiesResponse = await fetch(`${API_URL}/universities`);
+        const universities = await universitiesResponse.json();
+        
+        const filterSelect = document.getElementById('student-university-filter');
+        if (filterSelect) {
+            filterSelect.innerHTML = '';
+            
+            // Add user's own university as default
+            const userUniversity = universities.find(u => u.id === currentUser.universityId);
+            if (userUniversity) {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = userUniversity.id;
+                defaultOption.textContent = `${userUniversity.name} (My University)`;
+                defaultOption.selected = true;
+                filterSelect.appendChild(defaultOption);
+            }
+            
+            // Add other universities
+            universities.forEach(uni => {
+                if (uni.id !== currentUser.universityId) {
+                    const option = document.createElement('option');
+                    option.value = uni.id;
+                    option.textContent = uni.name;
+                    filterSelect.appendChild(option);
+                }
+            });
+            
+            // Add change listener
+            filterSelect.addEventListener('change', handleStudentUniversityFilterChange);
+        }
+        
+        // Load initial data for user's university
+        await loadStudentDashboardData(currentUser.universityId);
+        
+    } catch (error) {
+        console.error('Error loading student dashboard:', error);
+        showToast('Error', 'Failed to load student dashboard', 'error');
+    }
+}
+
+// Load Student Dashboard Data
+async function loadStudentDashboardData(universityId) {
+    try {
+        // Load weekly stats
+        const weekResponse = await fetch(`${API_URL}/energy/stats/week?universityId=${universityId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const weekStats = await weekResponse.json();
+        
+        // Load monthly stats
+        const monthResponse = await fetch(`${API_URL}/energy/stats/month?universityId=${universityId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const monthStats = await monthResponse.json();
+        
+        // Load yearly stats
+        const yearResponse = await fetch(`${API_URL}/energy/stats/year?universityId=${universityId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const yearStats = await yearResponse.json();
+        
+        // Load devices count
+        const devicesResponse = await fetch(`${API_URL}/devices?universityId=${universityId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const devices = await devicesResponse.json();
+        const panelCount = devices.filter(d => d.type === 'solar_panel').length;
+        
+        // Update UI
+        document.getElementById('student-weekly-production').textContent = 
+            (weekStats.total_generated || 0).toFixed(2) + ' kWh';
+        document.getElementById('student-monthly-production').textContent = 
+            (monthStats.total_generated || 0).toFixed(2) + ' kWh';
+        document.getElementById('student-yearly-production').textContent = 
+            (yearStats.total_generated || 0).toFixed(2) + ' kWh';
+            
+        document.getElementById('student-weekly-consumption').textContent = 
+            (weekStats.total_used || 0).toFixed(2) + ' kWh';
+        document.getElementById('student-monthly-consumption').textContent = 
+            (monthStats.total_used || 0).toFixed(2) + ' kWh';
+        document.getElementById('student-yearly-consumption').textContent = 
+            (yearStats.total_used || 0).toFixed(2) + ' kWh';
+            
+        document.getElementById('student-panel-count').textContent = panelCount;
+        
+    } catch (error) {
+        console.error('Error loading student dashboard data:', error);
+        showToast('Error', 'Failed to load dashboard data', 'error');
+    }
+}
+
+// Handle Student University Filter Change
+function handleStudentUniversityFilterChange(event) {
+    const universityId = event.target.value;
+    loadStudentDashboardData(universityId);
 }
 
 // Display recent alerts
@@ -684,38 +925,51 @@ async function loadDevices() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const devices = await response.json();
+        
+        // Load universities for display
+        const universitiesResponse = await fetch(`${API_URL}/universities`);
+        const universities = await universitiesResponse.json();
+        const universityMap = {};
+        universities.forEach(uni => universityMap[uni.id] = uni.name);
 
         const tbody = document.getElementById('devices-table-body');
 
         if (devices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No devices found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No devices found</td></tr>';
             return;
         }
 
         tbody.innerHTML = devices.map(device => {
-            const statusBadge = device.status === 'active' ? 'success' : 'danger';
-            const uptime = Math.floor(Math.random() * 30) + 1;
-            const signal = Math.floor(Math.random() * 30) + 70;
+            const statusBadge = device.status === 'active' ? 'success' : 
+                               device.status === 'inactive' ? 'danger' : 'warning';
+            const universityName = universityMap[device.university_id] || 'N/A';
+            
+            let actions = `<button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="showDeviceDetail(${device.id})">View</button>`;
+            
+            // Only show edit/delete for admin/super_admin
+            if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+                actions += ` 
+                    <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; margin-left: 4px;" onclick="showEditPanelModal(${device.id})">Edit</button>
+                    <button class="btn btn-danger" style="padding: 8px 16px; font-size: 13px; margin-left: 4px;" onclick="deletePanel(${device.id})">Delete</button>
+                `;
+            }
             
             return `
                 <tr>
                     <td>${device.id}</td>
                     <td><strong>${device.name}</strong></td>
                     <td>${device.type.replace('_', ' ').toUpperCase()}</td>
+                    <td>${device.capacity ? device.capacity + ' kW' : 'N/A'}</td>
                     <td>
                         <span class="badge ${statusBadge}">
                             <span class="badge-dot"></span>
                             ${device.status.toUpperCase()}
                         </span>
                     </td>
-                    <td>${signal}%</td>
-                    <td>${uptime} days</td>
+                    <td>${device.location || 'N/A'}</td>
+                    <td>${universityName}</td>
                     <td>${new Date(device.last_update).toLocaleString()}</td>
-                    <td>
-                        <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="showDeviceDetail(${device.id})">
-                            View
-                        </button>
-                    </td>
+                    <td>${actions}</td>
                 </tr>
             `;
         }).join('');
@@ -1337,7 +1591,8 @@ async function loadUsers() {
         }
 
         tbody.innerHTML = users.map(user => {
-            const roleColor = user.role === 'admin' ? 'danger' : 'info';
+            const roleColor = user.role === 'super_admin' ? 'danger' : 
+                             user.role === 'admin' ? 'warning' : 'info';
             const statusBadge = user.approved ? 
                 '<span class="badge success"><span class="badge-dot"></span>APPROVED</span>' :
                 '<span class="badge warning"><span class="badge-dot"></span>PENDING</span>';
@@ -1503,3 +1758,190 @@ async function deleteUser(userId) {
     }
 }
 
+// Panel Management Functions
+
+// Show Add Panel Modal
+async function showAddPanelModal() {
+    const modal = document.getElementById('add-panel-modal');
+    modal.style.display = 'flex';
+    
+    // Load universities into dropdown
+    try {
+        const response = await fetch(`${API_URL}/universities`);
+        const universities = await response.json();
+        
+        const select = document.getElementById('new-panel-university');
+        select.innerHTML = '<option value="">Select University</option>';
+        universities.forEach(uni => {
+            const option = document.createElement('option');
+            option.value = uni.id;
+            option.textContent = uni.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading universities:', error);
+    }
+}
+
+// Close Add Panel Modal
+function closeAddPanelModal() {
+    const modal = document.getElementById('add-panel-modal');
+    modal.style.display = 'none';
+    document.getElementById('add-panel-form').reset();
+}
+
+// Handle Add Panel Form Submit
+document.getElementById('add-panel-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('new-panel-name').value;
+    const type = document.getElementById('new-panel-type').value;
+    const capacity = document.getElementById('new-panel-capacity').value;
+    const status = document.getElementById('new-panel-status').value;
+    const location = document.getElementById('new-panel-location').value;
+    const universityId = document.getElementById('new-panel-university').value;
+    const latitude = document.getElementById('new-panel-latitude').value || null;
+    const longitude = document.getElementById('new-panel-longitude').value || null;
+    
+    try {
+        const response = await fetch(`${API_URL}/devices`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name, type, status, capacity, location, universityId, latitude, longitude
+            })
+        });
+        
+        if (response.ok) {
+            showToast('Success', 'Panel added successfully', 'success');
+            closeAddPanelModal();
+            loadDevices();
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to add panel', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding panel:', error);
+        showToast('Error', 'Failed to add panel', 'error');
+    }
+});
+
+// Show Edit Panel Modal
+async function showEditPanelModal(deviceId) {
+    const modal = document.getElementById('edit-panel-modal');
+    modal.style.display = 'flex';
+    
+    try {
+        // Load device details
+        const deviceResponse = await fetch(`${API_URL}/devices/${deviceId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const device = await deviceResponse.json();
+        
+        // Load universities
+        const universitiesResponse = await fetch(`${API_URL}/universities`);
+        const universities = await universitiesResponse.json();
+        
+        // Populate form
+        document.getElementById('edit-panel-id').value = device.id;
+        document.getElementById('edit-panel-name').value = device.name;
+        document.getElementById('edit-panel-type').value = device.type;
+        document.getElementById('edit-panel-capacity').value = device.capacity || '';
+        document.getElementById('edit-panel-status').value = device.status;
+        document.getElementById('edit-panel-location').value = device.location || '';
+        document.getElementById('edit-panel-latitude').value = device.latitude || '';
+        document.getElementById('edit-panel-longitude').value = device.longitude || '';
+        
+        // Populate university dropdown
+        const select = document.getElementById('edit-panel-university');
+        select.innerHTML = '<option value="">Select University</option>';
+        universities.forEach(uni => {
+            const option = document.createElement('option');
+            option.value = uni.id;
+            option.textContent = uni.name;
+            if (uni.id === device.university_id) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('Error loading panel details:', error);
+        showToast('Error', 'Failed to load panel details', 'error');
+    }
+}
+
+// Close Edit Panel Modal
+function closeEditPanelModal() {
+    const modal = document.getElementById('edit-panel-modal');
+    modal.style.display = 'none';
+    document.getElementById('edit-panel-form').reset();
+}
+
+// Handle Edit Panel Form Submit
+document.getElementById('edit-panel-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('edit-panel-id').value;
+    const name = document.getElementById('edit-panel-name').value;
+    const type = document.getElementById('edit-panel-type').value;
+    const capacity = document.getElementById('edit-panel-capacity').value;
+    const status = document.getElementById('edit-panel-status').value;
+    const location = document.getElementById('edit-panel-location').value;
+    const universityId = document.getElementById('edit-panel-university').value;
+    const latitude = document.getElementById('edit-panel-latitude').value || null;
+    const longitude = document.getElementById('edit-panel-longitude').value || null;
+    
+    try {
+        const response = await fetch(`${API_URL}/devices/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name, type, status, capacity, location, universityId, latitude, longitude
+            })
+        });
+        
+        if (response.ok) {
+            showToast('Success', 'Panel updated successfully', 'success');
+            closeEditPanelModal();
+            loadDevices();
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to update panel', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating panel:', error);
+        showToast('Error', 'Failed to update panel', 'error');
+    }
+});
+
+// Delete Panel
+async function deletePanel(deviceId) {
+    if (!confirm('Are you sure you want to delete this panel? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/devices/${deviceId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            showToast('Success', 'Panel deleted successfully', 'success');
+            loadDevices();
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to delete panel', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting panel:', error);
+        showToast('Error', 'Failed to delete panel', 'error');
+    }
+}

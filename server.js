@@ -10,6 +10,7 @@ const energyRoutes = require('./routes/energy');
 const alertRoutes = require('./routes/alerts');
 const userRoutes = require('./routes/users');
 const exportRoutes = require('./routes/export');
+const universityRoutes = require('./routes/universities');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +28,7 @@ app.use('/api/energy', energyRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/universities', universityRoutes);
 
 // WebSocket connection for real-time data
 wss.on('connection', (ws) => {
@@ -80,13 +82,24 @@ function simulateSensorData() {
     // Broadcast to WebSocket clients
     broadcastData(realtimeData);
     
-    // Store energy data in database
+    // Store energy data in database for all universities
     const energyGenerated = solarData.power / 1000; // Convert to kW
     const energyUsed = realtimeData.consumption / 1000;
     
-    db.run(`INSERT INTO energy_logs (timestamp, energy_generated, energy_used, battery_level) 
-            VALUES (?, ?, ?, ?)`,
-        [timestamp, energyGenerated, energyUsed, batteryLevel]
+    // Insert for BMU (university_id = 1)
+    db.run(`INSERT INTO energy_logs (timestamp, energy_generated, energy_used, battery_level, university_id) 
+            VALUES (?, ?, ?, ?, ?)`,
+        [timestamp, energyGenerated, energyUsed, batteryLevel, 1]
+    );
+    
+    // Insert for ADU (university_id = 2) with slightly different values
+    const energyGeneratedADU = energyGenerated * 0.85;
+    const energyUsedADU = energyUsed * 0.9;
+    const batteryLevelADU = batteryLevel * 0.95;
+    
+    db.run(`INSERT INTO energy_logs (timestamp, energy_generated, energy_used, battery_level, university_id) 
+            VALUES (?, ?, ?, ?, ?)`,
+        [timestamp, energyGeneratedADU, energyUsedADU, batteryLevelADU, 2]
     );
     
     // Check for alerts

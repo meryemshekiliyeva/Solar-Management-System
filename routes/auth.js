@@ -8,10 +8,10 @@ const JWT_SECRET = 'your-secret-key-change-in-production';
 
 // Register
 router.post('/register', (req, res) => {
-    const { email, password, fullName } = req.body;
+    const { email, password, fullName, role, universityId } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
+    if (!email || !password || !role || !universityId) {
+        return res.status(400).json({ error: 'Email, password, role, and university are required' });
     }
 
     if (password.length < 6) {
@@ -23,30 +23,101 @@ router.post('/register', (req, res) => {
         return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    // Validate role
+    if (!['student', 'viewer', 'admin', 'super_admin'].includes(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+    }
 
-    db.run(
-        'INSERT INTO users (email, password, role, full_name, approved) VALUES (?, ?, ?, ?, ?)',
-        [email, hashedPassword, 'viewer', fullName || '', 0],
-        function(err) {
-            if (err) {
-                if (err.message.includes('UNIQUE')) {
-                    return res.status(400).json({ error: 'Email already exists' });
-                }
-                return res.status(500).json({ error: 'Database error' });
-            }
-            res.json({ 
-                message: 'Registration successful. Your account is pending admin approval.',
-                userId: this.lastID 
+    // Validate email domain matches university
+    const emailDomain = email.split('@')[1];
+    
+    db.get('SELECT * FROM universities WHERE id = ?', [universityId], (err, university) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        if (!university) {
+            return res.status(400).json({ error: 'Invalid university' });
+        }
+
+        if (emailDomain !== university.domain) {
+            return res.status(400).json({ 
+                error: `Email domain must be @${university.domain} for ${university.name}` 
             });
         }
-    );
+
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        
+        // Students are auto-approved, viewers need approval
+        const approvalStatus = role === 'student' ? 1 : 0;
+
+        db.run(
+            'INSERT INTO users (email, password, role, full_name, university_id, approved) VALUES (?, ?, ?, ?, ?, ?)',
+            [email, hashedPassword, role, fullName || '', universityId, approvalStatus],
+            function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE')) {
+                        return res.status(400).json({ error: 'Email already exists' });
+                    }
+                    return res.status(500).json({ error: 'Database error' });
+                }
+                
+                const message = role === 'student' 
+                    ? 'Registration successful. You can now login.'
+                    : 'Registration successful. Your account is pending admin approval.';
+                    
+                res.json({ 
+                    message: message,
+                    userId: this.lastID,
+                    autoApproved: role === 'student'
+                });
+            }
+        );
+    });
 });
 
 // Login
 router.post('/login', (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, role, universityId } = req.body;
 
+    // Super admin and admin can login without university
+    if (!['admin', 'super_admin'].includes(role) && !universityId) {
+        return res.status(400).json({ error: 'University selection required' });
+    }
+
+    if (!role) {
+        return res.status(400).json({ error: 'Role selection required' });
+    }
+
+    // Validate email domain matches university (except for admin/super_admin)
+    if (!['admin', 'super_admin'].includes(role)) {
+        const emailDomain = email.split('@')[1];
+        
+        db.get('SELECT * FROM universities WHERE id = ?', [universityId], (err, university) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            if (!university) {
+                return res.status(400).json({ error: 'Invalid university' });
+            }
+
+            if (emailDomain !== university.domain) {
+                return res.status(400).json({ 
+                    error: `Email domain must be @${university.domain} for ${university.name}` 
+                });
+            }
+
+            // Continue with authentication
+            authenticateUser(email, password, role, universityId, res);
+        });
+    } else {
+        // Admin/Super admin login
+        authenticateUser(email, password, role, null, res);
+    }
+});
+
+function authenticateUser(email, password, role, universityId, res) {
     db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
@@ -54,6 +125,18 @@ router.post('/login', (req, res) => {
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Verify role matches
+        if (user.role !== role) {
+            return res.status(401).json({ error: 'Invalid role for this account' });
+        }
+
+        // Verify university matches (except for admin/super_admin)
+        if (!['admin', 'super_admin'].includes(role)) {
+            if (user.university_id !== universityId) {
+                return res.status(401).json({ error: 'Invalid university for this account' });
+            }
         }
 
         const validPassword = bcrypt.compareSync(password, user.password);
@@ -65,12 +148,15 @@ router.post('/login', (req, res) => {
             return res.status(403).json({ 
                 error: 'Account pending approval',
                 email: user.email,
-                message: 'Your account is pending admin approval. Please contact admin@university.edu for assistance.'
+                message: 'Your account is pending admin approval. Please contact your university administrator.'
             });
         }
 
+        // Update last login
+        db.run('UPDATE users SET last_login = ? WHERE id = ?', [new Date().toISOString(), user.id]);
+
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
+            { id: user.id, email: user.email, role: user.role, universityId: user.university_id },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -81,11 +167,12 @@ router.post('/login', (req, res) => {
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                fullName: user.full_name
+                fullName: user.full_name,
+                universityId: user.university_id
             }
         });
     });
-});
+}
 
 // Verify token middleware
 function verifyToken(req, res, next) {

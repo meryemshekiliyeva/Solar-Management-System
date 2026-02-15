@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Middleware to check admin role
 function isAdmin(req, res, next) {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
         return res.status(403).json({ error: 'Admin access required' });
     }
     next();
@@ -15,7 +15,16 @@ function isAdmin(req, res, next) {
 
 // Get all users (admin only)
 router.get('/', verifyToken, isAdmin, (req, res) => {
-    db.all('SELECT id, email, role, full_name, approved, created_at FROM users', (err, users) => {
+    let query = 'SELECT id, email, role, full_name, university_id, approved, created_at FROM users';
+    let params = [];
+    
+    // Filter by university for regular admins, super_admin sees all
+    if (req.user.role === 'admin') {
+        query += ' WHERE university_id = ?';
+        params.push(req.user.universityId);
+    }
+    
+    db.all(query, params, (err, users) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
         }
@@ -25,7 +34,16 @@ router.get('/', verifyToken, isAdmin, (req, res) => {
 
 // Get pending users (admin only)
 router.get('/pending', verifyToken, isAdmin, (req, res) => {
-    db.all('SELECT id, email, role, full_name, created_at FROM users WHERE approved = 0', (err, users) => {
+    let query = 'SELECT id, email, role, full_name, university_id, created_at FROM users WHERE approved = 0';
+    let params = [];
+    
+    // Filter by university for regular admins, super_admin sees all
+    if (req.user.role === 'admin') {
+        query += ' AND university_id = ?';
+        params.push(req.user.universityId);
+    }
+    
+    db.all(query, params, (err, users) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
         }
@@ -61,16 +79,29 @@ router.put('/:id/reject', verifyToken, isAdmin, (req, res) => {
 
 // Create new user (admin only)
 router.post('/', verifyToken, isAdmin, (req, res) => {
-    const { email, password, role } = req.body;
+    const { email, password, role, fullName, universityId } = req.body;
 
     if (!email || !password || !role) {
         return res.status(400).json({ error: 'Email, password, and role are required' });
     }
 
+    // Validate role
+    if (!['student', 'viewer', 'admin', 'super_admin'].includes(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    // For regular admin, use their university. For super_admin, require universityId
+    let targetUniversityId = universityId;
+    if (req.user.role === 'admin') {
+        targetUniversityId = req.user.universityId;
+    } else if (req.user.role === 'super_admin' && !universityId) {
+        return res.status(400).json({ error: 'University ID required for super admin to create users' });
+    }
+
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    db.run('INSERT INTO users (email, password, role, approved) VALUES (?, ?, ?, ?)',
-        [email, hashedPassword, role, 1],
+    db.run('INSERT INTO users (email, password, role, full_name, university_id, approved) VALUES (?, ?, ?, ?, ?, ?)',
+        [email, hashedPassword, role, fullName || '', targetUniversityId, 1],
         function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE')) {
