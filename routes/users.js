@@ -15,7 +15,7 @@ function isAdmin(req, res, next) {
 
 // Get all users (admin only)
 router.get('/', verifyToken, isAdmin, (req, res) => {
-    let query = 'SELECT id, email, role, full_name, university_id, approved, created_at FROM users';
+    let query = 'SELECT id, email, role, full_name, university_id, status, created_at FROM users';
     let params = [];
     
     // Filter by university for regular admins, super_admin sees all
@@ -34,13 +34,19 @@ router.get('/', verifyToken, isAdmin, (req, res) => {
 
 // Get pending users (admin only)
 router.get('/pending', verifyToken, isAdmin, (req, res) => {
-    let query = 'SELECT id, email, role, full_name, university_id, created_at FROM users WHERE approved = 0';
-    let params = [];
+    let query, params = [];
     
-    // Filter by university for regular admins, super_admin sees all
+    // Admin role: show only pending viewers from their university
+    // Super Admin role: show only pending admins (all universities)
     if (req.user.role === 'admin') {
-        query += ' AND university_id = ?';
+        query = `SELECT id, email, role, full_name, university_id, created_at 
+                 FROM users 
+                 WHERE status = 'pending' AND role = 'viewer' AND university_id = ?`;
         params.push(req.user.universityId);
+    } else if (req.user.role === 'super_admin') {
+        query = `SELECT id, email, role, full_name, university_id, created_at 
+                 FROM users 
+                 WHERE status = 'pending' AND role = 'admin'`;
     }
     
     db.all(query, params, (err, users) => {
@@ -53,27 +59,77 @@ router.get('/pending', verifyToken, isAdmin, (req, res) => {
 
 // Approve user (admin only)
 router.put('/:id/approve', verifyToken, isAdmin, (req, res) => {
-    db.run('UPDATE users SET approved = 1 WHERE id = ?', [req.params.id], function(err) {
+    // First check if user has permission to approve this user
+    db.get('SELECT role, university_id FROM users WHERE id = ?', [req.params.id], (err, user) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
         }
-        if (this.changes === 0) {
+        if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        res.json({ message: 'User approved successfully' });
+        
+        // Regular admin can only approve viewers from their university
+        if (req.user.role === 'admin') {
+            if (user.role !== 'viewer' || user.university_id !== req.user.universityId) {
+                return res.status(403).json({ error: 'You can only approve viewers from your university' });
+            }
+        }
+        
+        // Super admin can only approve admins
+        if (req.user.role === 'super_admin') {
+            if (user.role !== 'admin') {
+                return res.status(403).json({ error: 'Super admin can only approve admin accounts' });
+            }
+        }
+        
+        // Approve the user
+        db.run('UPDATE users SET status = \'approved\' WHERE id = ?', [req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: 'Database error' });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            res.json({ message: 'User approved successfully' });
+        });
     });
 });
 
-// Reject user (admin only) - deletes the user
+// Reject user (admin only) - sets status to rejected
 router.put('/:id/reject', verifyToken, isAdmin, (req, res) => {
-    db.run('DELETE FROM users WHERE id = ?', [req.params.id], function(err) {
+    // First check if user has permission to reject this user
+    db.get('SELECT role, university_id FROM users WHERE id = ?', [req.params.id], (err, user) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
         }
-        if (this.changes === 0) {
+        if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        res.json({ message: 'User rejected and removed' });
+        
+        // Regular admin can only reject viewers from their university
+        if (req.user.role === 'admin') {
+            if (user.role !== 'viewer' || user.university_id !== req.user.universityId) {
+                return res.status(403).json({ error: 'You can only reject viewers from your university' });
+            }
+        }
+        
+        // Super admin can only reject admins
+        if (req.user.role === 'super_admin') {
+            if (user.role !== 'admin') {
+                return res.status(403).json({ error: 'Super admin can only reject admin accounts' });
+            }
+        }
+        
+        // Reject the user (delete them)
+        db.run('DELETE FROM users WHERE id = ?', [req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: 'Database error' });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            res.json({ message: 'User rejected and removed' });
+        });
     });
 });
 
@@ -100,8 +156,9 @@ router.post('/', verifyToken, isAdmin, (req, res) => {
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    db.run('INSERT INTO users (email, password, role, full_name, university_id, approved) VALUES (?, ?, ?, ?, ?, ?)',
-        [email, hashedPassword, role, fullName || '', targetUniversityId, 1],
+    // Auto-approve created users (status = 'approved')
+    db.run('INSERT INTO users (email, password, role, full_name, university_id, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [email, hashedPassword, role, fullName || '', targetUniversityId, 'approved'],
         function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE')) {

@@ -45,7 +45,7 @@ function initializeDatabase() {
         role TEXT NOT NULL,
         full_name TEXT,
         university_id INTEGER,
-        approved INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'pending',
         last_login DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (university_id) REFERENCES universities(id)
@@ -57,8 +57,8 @@ function initializeDatabase() {
         
         // Insert default super admin user
         const superAdminPassword = bcrypt.hashSync('admin123', 10);
-        db.run(`INSERT OR IGNORE INTO users (email, password, role, full_name, university_id, approved) VALUES (?, ?, ?, ?, ?, ?)`,
-            ['admin@university.edu', superAdminPassword, 'super_admin', 'Super Administrator', null, 1],
+        db.run(`INSERT OR IGNORE INTO users (email, password, role, full_name, university_id, status) VALUES (?, ?, ?, ?, ?, ?)`,
+            ['admin@university.edu', superAdminPassword, 'super_admin', 'Super Administrator', null, 'approved'],
             (err) => {
                 if (err) console.error('Error inserting super admin:', err);
             }

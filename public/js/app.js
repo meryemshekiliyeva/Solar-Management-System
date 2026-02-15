@@ -144,10 +144,8 @@ function handleRegisterRoleChange() {
     const universityGroup = document.getElementById('register-university-group');
     const universitySelect = document.getElementById('register-university');
     
-    if (role === 'admin' || role === 'super_admin') {
-        universityGroup.style.display = 'none';
-        universitySelect.required = false;
-    } else if (role) {
+    // All roles (student, viewer, admin) require university selection
+    if (role) {
         universityGroup.style.display = 'block';
         universitySelect.required = true;
     } else {
@@ -388,6 +386,88 @@ function showApp() {
     
     // Setup navigation
     setupNavigation();
+    
+    // Setup university switcher for super admin
+    if (currentUser.role === 'super_admin') {
+        setupUniversitySwitcher();
+    }
+}
+
+// Setup university switcher (Super Admin only)
+async function setupUniversitySwitcher() {
+    const switcher = document.getElementById('university-switcher');
+    const select = document.getElementById('university-select');
+    
+    if (!switcher || !select) return;
+    
+    // Show the switcher
+    switcher.style.display = 'flex';
+    switcher.style.alignItems = 'center';
+    
+    try {
+        // Load universities
+        const response = await fetch('/api/universities/all', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            const universities = await response.json();
+            
+            // Clear existing options except "All Universities"
+            select.innerHTML = '<option value="all">All Universities</option>';
+            
+            // Add university options
+            universities.forEach(uni => {
+                const option = document.createElement('option');
+                option.value = uni.id;
+                option.textContent = uni.name;
+                select.appendChild(option);
+            });
+            
+            // Handle university change
+            select.addEventListener('change', handleUniversityChange);
+            
+            // Store current selection in global variable
+            window.selectedUniversityId = 'all';
+        }
+    } catch (error) {
+        console.error('Error loading universities:', error);
+    }
+}
+
+// Handle university change
+function handleUniversityChange() {
+    const select = document.getElementById('university-select');
+    window.selectedUniversityId = select.value;
+    
+    // Reload current page data with new filter
+    const activePage = document.querySelector('.content-page.active');
+    if (activePage) {
+        const pageId = activePage.id.replace('-content', '');
+        
+        // Reload data for current page
+        switch(pageId) {
+            case 'dashboard':
+                loadDashboard();
+                break;
+            case 'devices':
+                loadDevices();
+                break;
+            case 'users':
+                loadUsers();
+                break;
+            case 'history':
+                loadHistory();
+                break;
+            case 'alerts':
+                loadAlerts();
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 // Update last update time
@@ -569,8 +649,16 @@ function updateRealtimeData(data) {
 // Load Dashboard
 async function loadDashboard() {
     try {
+        // Build query parameters for university filter
+        let queryParams = '';
+        if (currentUser.role === 'super_admin' && window.selectedUniversityId && window.selectedUniversityId !== 'all') {
+            queryParams = `?universityId=${window.selectedUniversityId}`;
+        } else if (currentUser.role === 'admin' && currentUser.universityId) {
+            queryParams = `?universityId=${currentUser.universityId}`;
+        }
+        
         // Load summary data
-        const summaryResponse = await fetch(`${API_URL}/energy/summary/today`, {
+        const summaryResponse = await fetch(`${API_URL}/energy/summary/today${queryParams}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const summary = await summaryResponse.json();
@@ -588,7 +676,7 @@ async function loadDashboard() {
         document.getElementById('consumed-progress').style.width = consumedPercent + '%';
 
         // Load devices count
-        const devicesResponse = await fetch(`${API_URL}/devices`, {
+        const devicesResponse = await fetch(`${API_URL}/devices${queryParams}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const devices = await devicesResponse.json();
@@ -1537,6 +1625,11 @@ async function exportDevices() {
 // Load Users (Admin only)
 async function loadUsers() {
     try {
+        // Load admin approvals for super admin
+        if (currentUser.role === 'super_admin') {
+            await loadAdminApprovals();
+        }
+        
         // Load pending users
         const pendingResponse = await fetch(`${API_URL}/users/pending`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -1593,9 +1686,18 @@ async function loadUsers() {
         tbody.innerHTML = users.map(user => {
             const roleColor = user.role === 'super_admin' ? 'danger' : 
                              user.role === 'admin' ? 'warning' : 'info';
-            const statusBadge = user.approved ? 
-                '<span class="badge success"><span class="badge-dot"></span>APPROVED</span>' :
-                '<span class="badge warning"><span class="badge-dot"></span>PENDING</span>';
+            
+            // Status badge based on status field
+            let statusBadge;
+            if (user.status === 'approved') {
+                statusBadge = '<span class="badge success"><span class="badge-dot"></span>APPROVED</span>';
+            } else if (user.status === 'pending') {
+                statusBadge = '<span class="badge warning"><span class="badge-dot"></span>PENDING</span>';
+            } else if (user.status === 'rejected') {
+                statusBadge = '<span class="badge danger"><span class="badge-dot"></span>REJECTED</span>';
+            } else {
+                statusBadge = '<span class="badge"><span class="badge-dot"></span>UNKNOWN</span>';
+            }
             
             return `
                 <tr>
@@ -1612,7 +1714,7 @@ async function loadUsers() {
                     <td>${new Date(user.created_at).toLocaleString()}</td>
                     <td>
                         ${user.id !== currentUser.id ? `
-                            ${!user.approved ? `
+                            ${user.status === 'pending' ? `
                                 <button class="btn btn-success" style="padding: 8px 16px; font-size: 13px; margin-right: 4px;" onclick="approveUser(${user.id})">
                                     Approve
                                 </button>
@@ -1641,6 +1743,121 @@ async function loadUsers() {
     } catch (error) {
         console.error('Error loading users:', error);
         showToast('Error', 'Failed to load users', 'error');
+    }
+}
+
+// Load admin approval requests (Super Admin only)
+async function loadAdminApprovals() {
+    const adminApprovalsCard = document.getElementById('admin-approvals-card');
+    const adminApprovalsBody = document.getElementById('admin-approvals-table-body');
+    const adminPendingCount = document.getElementById('admin-pending-count');
+    
+    if (!adminApprovalsCard) return;
+    
+    // Show the card for super admin
+    adminApprovalsCard.style.display = 'block';
+    
+    try {
+        const response = await fetch(`${API_URL}/users/pending`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load admin approvals');
+        }
+        
+        const pendingAdmins = await response.json();
+        
+        // Update count
+        adminPendingCount.textContent = pendingAdmins.length;
+        
+        if (pendingAdmins.length === 0) {
+            adminApprovalsBody.innerHTML = '<tr><td colspan="6" class="no-data">No pending admin requests</td></tr>';
+            return;
+        }
+        
+        // Load universities for display
+        const universitiesResponse = await fetch('/api/universities/all', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const universities = await universitiesResponse.json();
+        const universityMap = {};
+        universities.forEach(uni => {
+            universityMap[uni.id] = uni.name;
+        });
+        
+        adminApprovalsBody.innerHTML = pendingAdmins.map(admin => `
+            <tr>
+                <td><strong>${admin.full_name || 'N/A'}</strong></td>
+                <td>${admin.email}</td>
+                <td>${universityMap[admin.university_id] || 'N/A'}</td>
+                <td>${new Date(admin.created_at).toLocaleString()}</td>
+                <td>
+                    <span class="badge warning">
+                        <span class="badge-dot"></span>
+                        PENDING
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-success" style="padding: 8px 16px; font-size: 13px; margin-right: 8px;" onclick="approveAdmin(${admin.id})">
+                        ✓ Approve
+                    </button>
+                    <button class="btn btn-danger" style="padding: 8px 16px; font-size: 13px;" onclick="rejectAdmin(${admin.id})">
+                        ✗ Reject
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading admin approvals:', error);
+        adminApprovalsBody.innerHTML = '<tr><td colspan="6" class="no-data">Error loading admin approvals</td></tr>';
+    }
+}
+
+// Approve admin (Super Admin only)
+async function approveAdmin(userId) {
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/approve`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast('Success', 'Admin approved successfully', 'success');
+            loadUsers();
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to approve admin', 'error');
+        }
+    } catch (error) {
+        console.error('Error approving admin:', error);
+        showToast('Error', 'Failed to approve admin', 'error');
+    }
+}
+
+// Reject admin (Super Admin only)
+async function rejectAdmin(userId) {
+    if (!confirm('Are you sure you want to reject this admin request? This will permanently delete their account.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/reject`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast('Success', 'Admin request rejected and removed', 'success');
+            loadUsers();
+        } else {
+            const data = await response.json();
+            showToast('Error', data.error || 'Failed to reject admin', 'error');
+        }
+    } catch (error) {
+        console.error('Error rejecting admin:', error);
+        showToast('Error', 'Failed to reject admin', 'error');
     }
 }
 

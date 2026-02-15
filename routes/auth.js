@@ -10,8 +10,8 @@ const JWT_SECRET = 'your-secret-key-change-in-production';
 router.post('/register', (req, res) => {
     const { email, password, fullName, role, universityId } = req.body;
 
-    if (!email || !password || !role || !universityId) {
-        return res.status(400).json({ error: 'Email, password, role, and university are required' });
+    if (!email || !password || !role) {
+        return res.status(400).json({ error: 'Email, password, and role are required' });
     }
 
     if (password.length < 6) {
@@ -23,9 +23,14 @@ router.post('/register', (req, res) => {
         return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Validate role
-    if (!['student', 'viewer', 'admin', 'super_admin'].includes(role)) {
+    // Validate role - super_admin cannot register via form
+    if (!['student', 'viewer', 'admin'].includes(role)) {
         return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    // All roles require university selection
+    if (!universityId) {
+        return res.status(400).json({ error: 'University selection is required' });
     }
 
     // Validate email domain matches university
@@ -48,11 +53,14 @@ router.post('/register', (req, res) => {
 
         const hashedPassword = bcrypt.hashSync(password, 10);
         
-        // Students are auto-approved, viewers need approval
-        const approvalStatus = role === 'student' ? 1 : 0;
+        // Approval logic:
+        // - Student: auto-approved (status = 'approved')
+        // - Viewer: pending, approved by university admin (status = 'pending')
+        // - Admin: pending, approved by super admin (status = 'pending')
+        const approvalStatus = role === 'student' ? 'approved' : 'pending';
 
         db.run(
-            'INSERT INTO users (email, password, role, full_name, university_id, approved) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO users (email, password, role, full_name, university_id, status) VALUES (?, ?, ?, ?, ?, ?)',
             [email, hashedPassword, role, fullName || '', universityId, approvalStatus],
             function(err) {
                 if (err) {
@@ -62,9 +70,14 @@ router.post('/register', (req, res) => {
                     return res.status(500).json({ error: 'Database error' });
                 }
                 
-                const message = role === 'student' 
-                    ? 'Registration successful. You can now login.'
-                    : 'Registration successful. Your account is pending admin approval.';
+                let message;
+                if (role === 'student') {
+                    message = 'Registration successful. You can now login.';
+                } else if (role === 'viewer') {
+                    message = 'Registration successful. Your account is pending university admin approval.';
+                } else if (role === 'admin') {
+                    message = 'Registration successful. Your account is pending super admin approval.';
+                }
                     
                 res.json({ 
                     message: message,
@@ -144,11 +157,20 @@ function authenticateUser(email, password, role, universityId, res) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        if (!user.approved) {
+        // Check if account is approved
+        if (user.status !== 'approved') {
+            let message = 'Your account is pending approval.';
+            if (user.role === 'viewer') {
+                message = 'Your account is pending university admin approval.';
+            } else if (user.role === 'admin') {
+                message = 'Your account is pending super admin approval.';
+            }
+            
             return res.status(403).json({ 
-                error: 'Account pending approval',
+                error: 'Account not approved',
                 email: user.email,
-                message: 'Your account is pending admin approval. Please contact your university administrator.'
+                status: user.status,
+                message: message
             });
         }
 

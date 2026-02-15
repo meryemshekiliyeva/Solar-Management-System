@@ -78,7 +78,6 @@
                                 <option value="student">Student</option>
                                 <option value="viewer">Viewer</option>
                                 <option value="admin">Admin</option>
-                                <option value="super_admin">Super Admin</option>
                             </select>
                         </div>
                         <div class="form-group" id="register-university-group" style="display: none;">
@@ -181,6 +180,13 @@
                     </div>
                 </div>
                 <div class="header-right">
+                    <!-- University Switcher (Super Admin Only) -->
+                    <div class="university-switcher" id="university-switcher" style="display: none; margin-right: 16px;">
+                        <label style="margin-right: 8px; color: var(--text-secondary); font-size: 14px;">University:</label>
+                        <select id="university-select" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--text-primary); font-size: 14px; cursor: pointer;">
+                            <option value="all">All Universities</option>
+                        </select>
+                    </div>
                     <div class="connection-status" id="connection-status">
                         <span class="status-dot connected" id="status-dot"></span>
                         <span id="status-text">Connected</span>
@@ -645,6 +651,31 @@
 
                 <!-- Users Page (Admin Only) -->
                 <div id="users-content" class="content-page">
+                    <!-- Admin Approvals (Super Admin Only) -->
+                    <div class="card" style="margin-bottom: 24px; padding: 20px; display: none;" id="admin-approvals-card">
+                        <div class="card-header" style="margin-bottom: 16px;">
+                            <h3 style="color: var(--text-primary); font-size: 18px;">Admin Approval Requests</h3>
+                            <span class="badge danger" id="admin-pending-count">0</span>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>University</th>
+                                        <th>Registration Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-approvals-table-body">
+                                    <tr><td colspan="6" class="no-data">No pending admin requests</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Pending Approvals -->
                     <div class="card" style="margin-bottom: 24px; padding: 20px;" id="pending-users-card">
                         <div class="card-header" style="margin-bottom: 16px;">
