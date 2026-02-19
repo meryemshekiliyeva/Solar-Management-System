@@ -224,7 +224,7 @@ body {
 }
 
 .content-page.active {
-    display: block;
+    display: block !important;
 }
 
 /* Cards Grid */

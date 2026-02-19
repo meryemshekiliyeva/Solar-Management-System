@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Solar Management System</title>
+    <title>EcoVolt - Renewable Energy Management</title>
     <link rel="stylesheet" href="css/enterprise.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -19,94 +20,8 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Login/Register Page -->
-    <div id="login-page" class="page active">
-        <div class="login-container">
-            <div class="login-box">
-                <h1>🌞 Solar Management</h1>
-                <h2>Enterprise Energy Platform</h2>
-                
-                <!-- Tab Navigation -->
-                <div class="auth-tabs">
-                    <button class="auth-tab active" id="login-tab" onclick="showAuthForm('login')">Sign In</button>
-                    <button class="auth-tab" id="register-tab" onclick="showAuthForm('register')">Sign Up</button>
-                </div>
-
-                <!-- Login Form -->
-                <div id="login-form-container" class="auth-form-container active">
-                    <form id="login-form">
-                        <div class="form-group">
-                            <label>Select Role</label>
-                            <select id="login-role" required onchange="handleLoginRoleChange()">
-                                <option value="">Choose your role</option>
-                                <option value="student">Student</option>
-                                <option value="viewer">Viewer</option>
-                                <option value="admin">Admin</option>
-                                <option value="super_admin">Super Admin</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="login-university-group" style="display: none;">
-                            <label>Select University</label>
-                            <select id="login-university" required>
-                                <option value="">Choose your university</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" id="login-email" placeholder="your-email@university.edu" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="login-password" placeholder="Enter your password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Sign In</button>
-                    </form>
-                    <p class="login-hint">Default super admin: admin@university.edu / admin123</p>
-                </div>
-
-                <!-- Register Form -->
-                <div id="register-form-container" class="auth-form-container">
-                    <form id="register-form">
-                        <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" id="register-name" placeholder="John Doe" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Select Role</label>
-                            <select id="register-role" required onchange="handleRegisterRoleChange()">
-                                <option value="">Choose your role</option>
-                                <option value="student">Student</option>
-                                <option value="viewer">Viewer</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="register-university-group" style="display: none;">
-                            <label>Select University</label>
-                            <select id="register-university" required onchange="updateRegisterEmailPlaceholder()">
-                                <option value="">Choose your university</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" id="register-email" placeholder="your-email@university.edu" required>
-                            <small id="email-hint" style="color: #666; font-size: 0.85em;"></small>
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="register-password" placeholder="Minimum 6 characters" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label>Confirm Password</label>
-                            <input type="password" id="register-password-confirm" placeholder="Re-enter password" required minlength="6">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Create Account</button>
-                    </form>
-                </div>
-
-                <!-- Messages -->
-                <div id="auth-message" class="auth-message"></div>
-            </div>
-        </div>
+    <!-- Login Page HIDDEN - Using new /login instead -->
+    <div id="login-page" class="page" style="display: none !important;">
     </div>
 
     <!-- Main Application -->
@@ -115,48 +30,48 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <span class="sidebar-logo-icon">🌞</span>
-                    <span class="sidebar-logo-text">Solar Enterprise</span>
+                    <span class="sidebar-logo-icon" style="background: linear-gradient(135deg, #f59e0b, #eab308); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"><span class="material-symbols-rounded" style="font-size: 32px; font-weight: 600;">bolt</span></span>
+                    <span class="sidebar-logo-text">EcoVolt</span>
                 </div>
                 <button class="sidebar-toggle" id="sidebar-toggle">
-                    <span>☰</span>
+                    <span><span class="material-symbols-rounded">menu</span></span>
                 </button>
             </div>
             <nav class="sidebar-nav">
                 <a href="#" data-page="dashboard" class="nav-item active">
-                    <span class="icon">📊</span>
+                    <span class="icon icon-gradient-blue"><span class="material-symbols-rounded">dashboard</span></span>
                     <span class="nav-item-text">Dashboard</span>
                 </a>
                 <a href="#" data-page="devices" class="nav-item hide-for-student">
-                    <span class="icon">⚡</span>
+                    <span class="icon icon-gradient-orange"><span class="material-symbols-rounded">solar_power</span></span>
                     <span class="nav-item-text">Devices</span>
                 </a>
                 <a href="#" data-page="map" class="nav-item hide-for-student">
-                    <span class="icon">🗺️</span>
+                    <span class="icon icon-gradient-green"><span class="material-symbols-rounded">map</span></span>
                     <span class="nav-item-text">Map View</span>
                 </a>
                 <a href="#" data-page="history" class="nav-item hide-for-student">
-                    <span class="icon">📜</span>
+                    <span class="icon icon-gradient-purple"><span class="material-symbols-rounded">history</span></span>
                     <span class="nav-item-text">History</span>
                 </a>
                 <a href="#" data-page="alerts" class="nav-item hide-for-student">
-                    <span class="icon">🔔</span>
+                    <span class="icon icon-gradient-red"><span class="material-symbols-rounded">notifications</span></span>
                     <span class="nav-item-text">Alerts</span>
                 </a>
                 <a href="#" data-page="prediction" class="nav-item hide-for-student">
-                    <span class="icon">🔮</span>
+                    <span class="icon icon-gradient-indigo"><span class="material-symbols-rounded">trending_up</span></span>
                     <span class="nav-item-text">Prediction</span>
                 </a>
                 <a href="#" data-page="export" class="nav-item hide-for-student">
-                    <span class="icon">📥</span>
+                    <span class="icon icon-gradient-teal"><span class="material-symbols-rounded">download</span></span>
                     <span class="nav-item-text">Export</span>
                 </a>
-                <a href="#" data-page="calculator" class="nav-item student-only" style="display: none;">
-                    <span class="icon">🧮</span>
+                <a href="#" data-page="calculator" class="nav-item">
+                    <span class="icon icon-gradient-pink"><span class="material-symbols-rounded">calculate</span></span>
                     <span class="nav-item-text">Calculator</span>
                 </a>
                 <a href="#" data-page="users" class="nav-item admin-only" style="display: none;">
-                    <span class="icon">👥</span>
+                    <span class="icon icon-gradient-violet"><span class="material-symbols-rounded">group</span></span>
                     <span class="nav-item-text">Users</span>
                 </a>
             </nav>
@@ -211,18 +126,18 @@
                 <div id="dashboard-content" class="content-page active">
                     <!-- System Health -->
                     <div class="system-health">
-                        <div class="health-icon">💚</div>
+                        <div class="health-icon icon-gradient-green"><span class="material-symbols-rounded" style="font-size: 48px;">verified</span></div>
                         <div class="health-info">
                             <div class="health-status">System Status: Optimal</div>
                             <div class="health-message">All systems operational • Last update: <span id="last-update">--:--</span></div>
                         </div>
                         <div class="health-details">
                             <div class="health-detail">
-                                <span>⏱️</span>
+                                <span class="icon-gradient-blue"><span class="material-symbols-rounded">schedule</span></span>
                                 <span>Uptime: <strong id="system-uptime">99.9%</strong></span>
                             </div>
                             <div class="health-detail">
-                                <span>📡</span>
+                                <span class="icon-gradient-purple"><span class="material-symbols-rounded">router</span></span>
                                 <span>Devices: <strong id="devices-online">0/0</strong></span>
                             </div>
                         </div>
@@ -231,20 +146,20 @@
                     <!-- Quick Actions -->
                     <div class="quick-actions">
                         <div class="quick-action" onclick="navigateToPage('devices')">
-                            <span class="quick-action-icon">⚙️</span>
+                            <span class="quick-action-icon icon-gradient-orange"><span class="material-symbols-rounded">settings</span></span>
                             <span class="quick-action-text">Manage Devices</span>
                         </div>
                         <div class="quick-action" onclick="navigateToPage('alerts')">
-                            <span class="quick-action-icon">🔔</span>
+                            <span class="quick-action-icon icon-gradient-red"><span class="material-symbols-rounded">notifications_active</span></span>
                             <span class="quick-action-text">View Alerts</span>
                         </div>
-                        <div class="quick-action" onclick="navigateToPage('export')">
-                            <span class="quick-action-icon">📥</span>
-                            <span class="quick-action-text">Export Data</span>
+                        <div class="quick-action" onclick="navigateToPage('calculator')">
+                            <span class="quick-action-icon icon-gradient-pink"><span class="material-symbols-rounded">calculate</span></span>
+                            <span class="quick-action-text">Energy Calculator</span>
                         </div>
-                        <div class="quick-action" onclick="navigateToPage('map')">
-                            <span class="quick-action-icon">🗺️</span>
-                            <span class="quick-action-text">View Map</span>
+                        <div class="quick-action" onclick="navigateToPage('export')">
+                            <span class="quick-action-icon icon-gradient-teal"><span class="material-symbols-rounded">download</span></span>
+                            <span class="quick-action-text">Export Data</span>
                         </div>
                     </div>
 
@@ -253,7 +168,7 @@
                         <div class="card" style="padding: 20px;">
                             <div class="card-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <h3 style="color: var(--text-primary); font-size: 20px; margin-bottom: 4px;">🔐 Admin Approval Requests</h3>
+                                    <h3 style="color: var(--text-primary); font-size: 20px; margin-bottom: 4px;"><span class="icon-gradient-indigo"><span class="material-symbols-rounded">admin_panel_settings</span></span> Admin Approval Requests</h3>
                                     <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Review and approve pending admin registrations</p>
                                 </div>
                                 <span class="badge danger" id="dashboard-admin-count" style="font-size: 16px; padding: 8px 16px;">0</span>
@@ -282,7 +197,7 @@
                         <div class="card" style="padding: 20px;">
                             <div class="card-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <h3 style="color: var(--text-primary); font-size: 20px; margin-bottom: 4px;">👁️ Viewer Approval Requests</h3>
+                                    <h3 style="color: var(--text-primary); font-size: 20px; margin-bottom: 4px;"><span class="icon-gradient-cyan"><span class="material-symbols-rounded">visibility</span></span> Viewer Approval Requests</h3>
                                     <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Review and approve pending viewer registrations from your university</p>
                                 </div>
                                 <span class="badge warning" id="dashboard-viewer-count" style="font-size: 16px; padding: 8px 16px;">0</span>
@@ -420,7 +335,7 @@
                                     <span>➕</span> Add Panel
                                 </button>
                                 <button class="btn btn-primary" onclick="loadDevices()">
-                                    <span>🔄</span> Refresh
+                                    <span class="icon-gradient-blue"><span class="material-symbols-rounded">autorenew</span></span> Refresh
                                 </button>
                             </div>
                         </div>
@@ -503,7 +418,7 @@
                             <span>🟢</span> Low
                         </div>
                         <button class="btn btn-primary" onclick="loadAlerts()">
-                            <span>🔄</span> Auto-Refresh: ON
+                            <span class="icon-gradient-green"><span class="material-symbols-rounded">autorenew</span></span> Auto-Refresh: ON
                         </button>
                     </div>
                     <div id="alerts-list-full"></div>
@@ -529,10 +444,10 @@
                             <div class="card-header">
                                 <div>
                                     <div class="card-title">Weather Impact</div>
-                                    <div class="card-value">☀️ Clear</div>
+                                    <div class="card-value"><span class="icon-gradient-yellow"><span class="material-symbols-rounded">wb_sunny</span></span> Clear</div>
                                     <div class="card-label">Optimal conditions</div>
                                 </div>
-                                <div class="card-icon blue">🌤️</div>
+                                <div class="card-icon icon-gradient-orange"><span class="material-symbols-rounded" style="font-size: 40px;">partly_cloudy_day</span></div>
                             </div>
                             <div class="card-footer">
                                 <span>Expected: <strong>+15% output</strong></span>
@@ -683,27 +598,19 @@
                                     <div class="card-title">Number of Solar Panels</div>
                                     <div class="card-value" id="student-panel-count">0</div>
                                 </div>
-                                <div class="card-icon yellow">☀️</div>
+                                <div class="card-icon icon-gradient-yellow"><span class="material-symbols-rounded" style="font-size: 40px;">solar_power</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Calculator Page (Student) -->
-                <div id="calculator-content" class="content-page" style="display: none;">
-                    <div class="card" style="padding: 40px; text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">🧮</div>
-                        <h2 style="color: var(--text-primary); margin-bottom: 16px;">Solar Calculator</h2>
-                        <p style="color: var(--text-secondary); font-size: 18px; margin-bottom: 24px;">
-                            Calculator logic will be added later.
-                        </p>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary-color);">
-                            <p style="color: var(--text-secondary); margin: 0;">
-                                This feature is under development and will include advanced solar energy calculations, 
-                                cost estimations, and ROI analysis.
-                            </p>
-                        </div>
-                    </div>
+                <!-- Calculator Page -->
+                <div id="calculator-content" class="content-page">
+                    <iframe 
+                        src="/calculator" 
+                        style="width: 100%; height: calc(100vh - 100px); border: none; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+                        title="Energy Calculator"
+                    ></iframe>
                 </div>
 
                 <!-- Users Page (Admin Only) -->

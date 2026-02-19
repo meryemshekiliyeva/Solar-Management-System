@@ -1534,3 +1534,111 @@ body {
     padding: 60px 20px;
     font-size: 16px;
 }
+
+/* Material Symbols Styling */
+.material-symbols-rounded {
+    font-variation-settings:
+    'FILL' 1,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+    user-select: none;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.nav-item .material-symbols-rounded {
+    font-size: 24px;
+}
+
+.sidebar-toggle .material-symbols-rounded {
+    font-size: 24px;
+}
+
+/* Colorful Icon Gradients */
+.icon-gradient-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-orange { background: linear-gradient(135deg, #f59e0b, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-green { background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-purple { background: linear-gradient(135deg, #a855f7, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-red { background: linear-gradient(135deg, #ef4444, #dc2626); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-indigo { background: linear-gradient(135deg, #6366f1, #4f46e5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-teal { background: linear-gradient(135deg, #14b8a6, #0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-pink { background: linear-gradient(135deg, #ec4899, #db2777); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-violet { background: linear-gradient(135deg, #8b5cf6, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.icon-gradient-yellow { background: linear-gradient(135deg, #f59e0b, #eab308); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+.quick-action-icon {
+    font-size: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.quick-action:hover .quick-action-icon {
+    transform: scale(1.15) rotate(5deg);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.quick-action-icon .material-symbols-rounded {
+    font-size: 48px;
+}
+
+.nav-item:hover .icon {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+
+.nav-item .icon {
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.health-icon {
+    font-size: 3em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+    }
+    50% {
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
+    }
+}
+
+.health-detail span:first-child {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+}
+
+.health-detail .material-symbols-rounded {
+    font-size: 20px;
+}
+
+.card-icon {
+    font-size: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.card:hover .card-icon {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.sidebar-logo-icon {
+    transition: transform 0.3s ease;
+}
+
+.sidebar-logo:hover .sidebar-logo-icon {
+    transform: scale(1.1) rotate(10deg);
+}

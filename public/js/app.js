@@ -1,5 +1,5 @@
 // Global variables
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3001/api';
 let token = localStorage.getItem('token');
 let currentUser = null;
 let ws = null;
@@ -50,13 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup sidebar toggle
     document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
     
-    // Load universities for login/register forms
-    loadUniversities();
-    
     if (token) {
+        // User has token, verify and load app
         verifyTokenAndLoadApp();
     } else {
-        showLoginPage();
+        // No token, redirect to new login page
+        window.location.href = '/login';
     }
 });
 
@@ -195,8 +194,10 @@ function showAuthForm(type) {
     }
 }
 
-// Register functionality
-document.getElementById('register-form').addEventListener('submit', async (e) => {
+// Register functionality (OLD - not used, keeping for compatibility)
+const registerForm = document.getElementById('register-form');
+if (registerForm) {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const fullName = document.getElementById('register-name').value;
@@ -242,10 +243,13 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         authMessage.textContent = 'Connection error. Please try again.';
         authMessage.style.display = 'block';
     }
-});
+  });
+}
 
-// Login functionality
-document.getElementById('login-form').addEventListener('submit', async (e) => {
+// Login functionality (OLD - not used, keeping for compatibility)
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const role = document.getElementById('login-role').value;
@@ -287,7 +291,8 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         authMessage.textContent = 'Connection error. Please try again.';
         authMessage.style.display = 'block';
     }
-});
+  });
+}
 
 // Logout
 document.getElementById('logout-btn').addEventListener('click', () => {
@@ -318,15 +323,20 @@ async function verifyTokenAndLoadApp() {
     }
 }
 
-// Show login page
+// Show login page - redirect to new Solar login
 function showLoginPage() {
-    document.getElementById('login-page').classList.add('active');
-    document.getElementById('app').style.display = 'none';
+    window.location.href = '/login';
 }
 
 // Show main app
 function showApp() {
-    document.getElementById('login-page').classList.remove('active');
+    // Hide login page (if exists)
+    const loginPage = document.getElementById('login-page');
+    if (loginPage) {
+        loginPage.style.display = 'none';
+        loginPage.classList.remove('active');
+    }
+    // Show main app
     document.getElementById('app').style.display = 'flex';
     
     // Set user info
@@ -519,6 +529,8 @@ function setupNavigation() {
 
 // Navigate to page
 function navigateToPage(page) {
+    console.log('Navigating to page:', page); // Debug
+    
     // Update active nav item
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
@@ -531,13 +543,17 @@ function navigateToPage(page) {
         content.classList.remove('active');
     });
     const contentPage = document.getElementById(`${page}-content`);
-    if (contentPage) contentPage.classList.add('active');
+    console.log('Content page element:', contentPage); // Debug
+    if (contentPage) {
+        contentPage.classList.add('active');
+        console.log('Added active class, display:', window.getComputedStyle(contentPage).display); // Debug
+    }
     
     // Update page title
     const titles = {
         dashboard: 'Dashboard',
         'student-dashboard': 'Student Dashboard',
-        calculator: 'Solar Calculator',
+        calculator: 'Energy Calculator',
         devices: 'Device Management',
         map: 'Map View',
         history: 'Energy History',
@@ -587,7 +603,7 @@ function navigateToPage(page) {
 
 // Initialize WebSocket for real-time data
 function initWebSocket() {
-    ws = new WebSocket('ws://localhost:3000');
+    ws = new WebSocket('ws://localhost:3001');
 
     ws.onopen = () => {
         console.log('WebSocket connected');

@@ -1,9 +1,9 @@
 @echo off
 echo ========================================
-echo University Solar Management System
+echo EcoVolt - Renewable Energy Management
 echo ========================================
 echo.
-echo Starting server...
+echo Starting backend server on port 3001...
 echo.
 node server.js
 pause
